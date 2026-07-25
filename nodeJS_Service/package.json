@@ -1,0 +1,9 @@
+{
+  "name": "user-services",
+  "version": "1.0.0",
+  "private": true,
+  "main": "userServices.js",
+  "scripts": {
+    "start": "node userServices.js"
+  }
+}
