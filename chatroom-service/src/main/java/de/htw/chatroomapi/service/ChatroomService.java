@@ -24,7 +24,6 @@ public class ChatroomService {
 
     @Transactional
     public Chatroom createChatroom(String name, String description, long expiryHours, long userId) {
-        System.out.println("creating chat now:" + name);
         Chatroom room = new Chatroom();
         LocalDateTime now = LocalDateTime.now();
         room.setName(name);

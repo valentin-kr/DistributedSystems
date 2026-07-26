@@ -38,8 +38,6 @@ public class Message {
 
     public void setSeqId(long seqId){
         this.seqId = seqId;
-        System.out.println("seqID:"+ seqId); // Debugging line to print the sequence ID
-        chatroom.setSeqId(this.seqId+1);
     }
 
     public Long getSeqId() {
