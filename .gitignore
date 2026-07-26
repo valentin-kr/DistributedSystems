@@ -1,0 +1,8 @@
+.DS_Store
+
+**/target/
+**/build/
+
+node_modules/
+target/
+.idea

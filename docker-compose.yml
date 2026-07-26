@@ -1,0 +1,15 @@
+services:
+  chatroom-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: chatroom-db
+      POSTGRES_USER: chatroom
+      POSTGRES_PASSWORD: chatroom
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chatroom -d chatroom-db"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
