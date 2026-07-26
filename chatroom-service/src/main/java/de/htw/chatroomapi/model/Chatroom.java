@@ -16,6 +16,7 @@ public class Chatroom {
     private Long seqId = 0L;
 
     private String name;
+    private String description;
 
     private LocalDateTime createdAt;
     private LocalDateTime expiryDate;
@@ -27,7 +28,7 @@ public class Chatroom {
     )
     private List<Message> messages = new ArrayList<>();
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(
             name = "chatroom_user_ids",
             joinColumns = @JoinColumn(name = "chatroom_id")
@@ -48,8 +49,24 @@ public class Chatroom {
         return name;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
     public long getSeqId(){
         return seqId==null? 0 : seqId;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getExpiryDate() {
+        return expiryDate;
     }
     
     public void setCreatedAt(LocalDateTime createdAt){
@@ -66,8 +83,22 @@ public class Chatroom {
         this.name = name;
     }
 
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public  List<Long> getUserIDList(){
         return userIDList;
+    }
+
+    public void addMember(Long userId) {
+        if (!userIDList.contains(userId)) {
+            userIDList.add(userId);
+        }
+    }
+
+    public boolean hasMember(Long userId) {
+        return userIDList.contains(userId);
     }
 
     public void setSeqId(Long seqId) {

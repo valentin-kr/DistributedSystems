@@ -15,7 +15,6 @@ public class Message {
     private String text;
     private LocalDateTime timestamp;
 
-    private String author;
     private Long authorId;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -26,8 +25,7 @@ public class Message {
         this.text = text;
     }
 
-    public void setAuthor(String author, Long userId){
-        this.author = author;
+    public void setAuthorId(Long userId){
         this.authorId=userId;
     }
 
@@ -40,7 +38,7 @@ public class Message {
 
     public void setSeqId(long seqId){
         this.seqId = seqId;
-        System.out.println("seqID:"+ seqId);
+        System.out.println("seqID:"+ seqId); // Debugging line to print the sequence ID
         chatroom.setSeqId(this.seqId+1);
     }
 
@@ -50,10 +48,6 @@ public class Message {
 
     public String getText() {
         return text;
-    }
-
-    public String getAuthorName() {
-        return author;
     }
 
     public Long getAuthorId() {

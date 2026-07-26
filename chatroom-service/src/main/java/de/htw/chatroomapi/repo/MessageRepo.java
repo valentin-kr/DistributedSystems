@@ -18,5 +18,5 @@ public interface MessageRepo extends JpaRepository<Message, Integer> {
     @Query("SELECT COALESCE(MAX(m.seqId), 0) FROM Message m WHERE m.chatroom.id = :chatroomId")
     Long findMaxSeqIdByChatroomId(@Param("chatroomId") Integer chatroomId);
 
-    List<Message> findByChatroomId(Integer chatroomId);
+    List<Message> findByChatroomIdOrderBySeqIdAsc(Integer chatroomId);
 }
