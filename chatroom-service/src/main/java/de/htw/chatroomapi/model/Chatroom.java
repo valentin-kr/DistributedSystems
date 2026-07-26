@@ -21,25 +21,17 @@ public class Chatroom {
     private LocalDateTime createdAt;
     private LocalDateTime expiryDate;
 
-    @OneToMany(
-            mappedBy = "chatroom",
-            cascade = CascadeType.ALL,
-            fetch = FetchType.LAZY
-    )
+    @OneToMany(mappedBy = "chatroom", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Message> messages = new ArrayList<>();
 
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "chatroom_user_ids",
-            joinColumns = @JoinColumn(name = "chatroom_id")
-    )
+    @CollectionTable(name = "chatroom_user_ids", joinColumns = @JoinColumn(name = "chatroom_id"))
     @Column(name = "user_id")
     private List<Long> userIDList = new ArrayList<>();
 
     public Integer getId() {
         return id;
     }
-
 
     public void setId(Integer id) {
         this.id = id;
@@ -57,8 +49,8 @@ public class Chatroom {
         return description;
     }
 
-    public long getSeqId(){
-        return seqId==null? 0 : seqId;
+    public long getSeqId() {
+        return seqId == null ? 0 : seqId;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -68,16 +60,14 @@ public class Chatroom {
     public LocalDateTime getExpiryDate() {
         return expiryDate;
     }
-    
-    public void setCreatedAt(LocalDateTime createdAt){
+
+    public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
 
     public void setExpiryDate(LocalDateTime expiryDate) {
         this.expiryDate = expiryDate;
     }
-
-
 
     public void setName(String name) {
         this.name = name;
@@ -87,7 +77,7 @@ public class Chatroom {
         this.description = description;
     }
 
-    public  List<Long> getUserIDList(){
+    public List<Long> getUserIDList() {
         return userIDList;
     }
 

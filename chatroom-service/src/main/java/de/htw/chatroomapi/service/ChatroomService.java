@@ -121,8 +121,7 @@ public class ChatroomService {
                 message.getSeqId(),
                 message.getText(),
                 message.getAuthorId(),
-                message.getTimestamp()
-        );
+                message.getTimestamp());
     }
 
     private Chatroom findRoom(Integer id) {

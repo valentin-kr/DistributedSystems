@@ -39,32 +39,31 @@ public class ChatroomController {
                 request.name(),
                 request.description(),
                 request.expiryHours(),
-                request.userId()
-        );
+                request.userId());
         return ResponseEntity.status(HttpStatus.CREATED).body(toChatroomResponse(room));
     }
 
     @PostMapping("/{id}/messages")
     public ResponseEntity<MessageResponse> sendMessage(@PathVariable Integer id,
-                                                       @RequestBody SendMessageRequest request) {
+            @RequestBody SendMessageRequest request) {
         Message message = chatroomService.sendMessage(
                 id,
                 request.text(),
-                request.userId()
-        );
+                request.userId());
         return ResponseEntity.status(HttpStatus.CREATED).body(chatroomService.toMessageResponse(message));
     }
 
     @PostMapping("/{id}/members")
     public ResponseEntity<ChatroomResponse> addMember(@PathVariable Integer id,
-                                                      @RequestBody AddMemberRequest request) {
+            @RequestBody AddMemberRequest request) {
         return ResponseEntity.ok(toChatroomResponse(chatroomService.addMember(id, request.userId())));
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<ChatroomResponse> renameChatroom(@PathVariable Integer id,
-                                                           @RequestBody RenameChatroomRequest request) {
-        return ResponseEntity.ok(toChatroomResponse(chatroomService.updateChatroom(id, request.name(), request.description())));
+            @RequestBody RenameChatroomRequest request) {
+        return ResponseEntity
+                .ok(toChatroomResponse(chatroomService.updateChatroom(id, request.name(), request.description())));
     }
 
     @DeleteMapping("/{id}")
@@ -105,7 +104,6 @@ public class ChatroomController {
                 room.getCreatedAt(),
                 room.getExpiryDate(),
                 chatroomService.isActive(room),
-                List.copyOf(room.getUserIDList())
-        );
+                List.copyOf(room.getUserIDList()));
     }
 }

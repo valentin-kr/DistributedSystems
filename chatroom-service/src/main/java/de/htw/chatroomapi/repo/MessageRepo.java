@@ -12,8 +12,7 @@ import java.util.List;
 public interface MessageRepo extends JpaRepository<Message, Integer> {
 
     List<Message> findByChatroomIdAndSeqIdGreaterThanEqual(
-            Integer chatroomId, Long seqId
-    );
+            Integer chatroomId, Long seqId);
 
     @Query("SELECT COALESCE(MAX(m.seqId), 0) FROM Message m WHERE m.chatroom.id = :chatroomId")
     Long findMaxSeqIdByChatroomId(@Param("chatroomId") Integer chatroomId);

@@ -21,22 +21,23 @@ public class Message {
     @JoinColumn(name = "chatroom_id")
     private Chatroom chatroom;
 
-    public void setText(String text){
+    public void setText(String text) {
         this.text = text;
     }
 
-    public void setAuthorId(Long userId){
-        this.authorId=userId;
+    public void setAuthorId(Long userId) {
+        this.authorId = userId;
     }
 
-    public void setTimestamp(LocalDateTime time){
+    public void setTimestamp(LocalDateTime time) {
         this.timestamp = time;
     }
-    public void setChatroom(Chatroom room){
+
+    public void setChatroom(Chatroom room) {
         this.chatroom = room;
     }
 
-    public void setSeqId(long seqId){
+    public void setSeqId(long seqId) {
         this.seqId = seqId;
     }
 
@@ -56,7 +57,4 @@ public class Message {
         return timestamp;
     }
 
-
-
-    // Getter & Setter ...
 }

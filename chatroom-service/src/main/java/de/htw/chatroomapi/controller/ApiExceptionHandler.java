@@ -34,8 +34,7 @@ public class ApiExceptionHandler {
                 LocalDateTime.now(),
                 status.value(),
                 status.getReasonPhrase(),
-                message
-        );
+                message);
         return ResponseEntity.status(status).body(response);
     }
 }
