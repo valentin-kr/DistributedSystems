@@ -3,7 +3,6 @@ package de.htw.chatroomapi.controller;
 import de.htw.chatroomapi.dto.CreateChatroomRequest;
 import de.htw.chatroomapi.dto.MessageResponse;
 import de.htw.chatroomapi.dto.SendMessageRequest;
-import de.htw.chatroomapi.exception.ChatroomExpiredException;
 import de.htw.chatroomapi.model.Chatroom;
 import de.htw.chatroomapi.model.Message;
 import de.htw.chatroomapi.service.ChatroomService;
@@ -65,10 +64,5 @@ public class ChatroomController {
     @GetMapping("/{id}/messages")
     public ResponseEntity<List<MessageResponse>> getAllMessages(@PathVariable Integer id) {
         return ResponseEntity.ok(chatroomService.getAllMessages(id));
-    }
-
-    @ExceptionHandler(ChatroomExpiredException.class)
-    public ResponseEntity<String> handleExpired(ChatroomExpiredException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
     }
 }

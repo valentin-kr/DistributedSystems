@@ -3,6 +3,10 @@ services:
     build: ./chatroomAPI
     ports:
       - "8081:8081"
+    environment:
+      MEDIA_STORAGE_DIR: /app/media-storage
+    volumes:
+      - chatroom-media:/app/media-storage
 
   user-db:
     image: postgres:16-alpine
@@ -44,3 +48,4 @@ services:
 
 volumes:
   user-db-data:
+  chatroom-media:
