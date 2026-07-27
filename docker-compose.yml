@@ -4,10 +4,33 @@ services:
     ports:
       - "8081:8081"
 
+  user-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: users
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   user-service:
     build: ./nodeJS_Service
     ports:
       - "3000:3000"
+    environment:
+      PGHOST: user-db
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: users
+    depends_on:
+      user-db:
+        condition: service_healthy
 
   gateway:
     image: nginx:alpine
@@ -18,3 +41,6 @@ services:
     depends_on:
       - chatroom-api
       - user-service
+
+volumes:
+  user-db-data:
