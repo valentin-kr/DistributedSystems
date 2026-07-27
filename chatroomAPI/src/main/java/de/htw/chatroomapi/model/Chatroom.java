@@ -48,16 +48,32 @@ public class Chatroom {
         return name;
     }
 
+    public String getName() {
+        return name;
+    }
+
     public long getSeqId(){
         return seqId==null? 0 : seqId;
     }
-    
+
     public void setCreatedAt(LocalDateTime createdAt){
         this.createdAt = createdAt;
     }
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
     public void setExpiryDate(LocalDateTime expiryDate) {
         this.expiryDate = expiryDate;
+    }
+
+    public LocalDateTime getExpiryDate() {
+        return expiryDate;
+    }
+
+    public boolean isExpired() {
+        return expiryDate != null && LocalDateTime.now().isAfter(expiryDate);
     }
 
 

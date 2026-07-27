@@ -1,6 +1,7 @@
 package de.htw.chatroomapi.service;
 
 import de.htw.chatroomapi.dto.MessageResponse;
+import de.htw.chatroomapi.exception.ChatroomExpiredException;
 import de.htw.chatroomapi.model.Chatroom;
 import de.htw.chatroomapi.model.Message;
 import de.htw.chatroomapi.repo.ChatroomRepo;
@@ -39,6 +40,10 @@ public class ChatroomService {
     public Message sendMessage(Integer chatroomId, String text, Long userId, String author) {
         Chatroom room = chatroomRepository.findById(chatroomId)
                 .orElseThrow(() -> new RuntimeException("Chatroom not found"));
+
+        if (room.isExpired()) {
+            throw new ChatroomExpiredException("Chatroom " + chatroomId + " has expired; messaging is disabled");
+        }
 
         Message message = new Message();
         message.setText(text);
