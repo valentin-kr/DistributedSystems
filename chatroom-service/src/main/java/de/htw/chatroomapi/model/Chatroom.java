@@ -69,6 +69,9 @@ public class Chatroom {
         this.expiryDate = expiryDate;
     }
 
+    public boolean isExpired() {
+        return expiryDate != null && LocalDateTime.now().isAfter(expiryDate);
+    }
     public void setName(String name) {
         this.name = name;
     }
