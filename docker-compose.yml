@@ -5,8 +5,30 @@ services:
       - "8081:8081"
     environment:
       MEDIA_STORAGE_DIR: /app/media-storage
+      DB_HOST: chatroom-db
+      DB_PORT: 5432
+      DB_NAME: chatroom
+      DB_USER: postgres
+      DB_PASSWORD: postgres
     volumes:
       - chatroom-media:/app/media-storage
+    depends_on:
+      chatroom-db:
+        condition: service_healthy
+
+  chatroom-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: chatroom
+    volumes:
+      - chatroom-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   user-db:
     image: postgres:16-alpine
@@ -48,4 +70,5 @@ services:
 
 volumes:
   user-db-data:
+  chatroom-db-data:
   chatroom-media:
