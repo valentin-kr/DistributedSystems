@@ -7,6 +7,7 @@
     "start": "node userServices.js"
   },
   "dependencies": {
-    "pg": "^8.13.0"
+    "pg": "^8.13.0",
+    "kafkajs": "^2.2.4"
   }
 }

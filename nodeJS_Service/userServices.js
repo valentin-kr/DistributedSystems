@@ -1,5 +1,6 @@
 const http = require('http');
 const { Pool } = require('pg');
+const { Kafka } = require('kafkajs');
 
 const PORT = process.env.PORT || 3000;
 
@@ -10,6 +11,14 @@ const pool = new Pool({
   password: process.env.PGPASSWORD || 'postgres',
   database: process.env.PGDATABASE || 'users',
 });
+
+const kafka = new Kafka({
+  clientId: 'user-service',
+  brokers: [process.env.KAFKA_BROKER || 'localhost:9092'],
+  retry: { retries: 20, initialRetryTime: 1000 },
+});
+const consumer = kafka.consumer({ groupId: 'user-service-group' });
+const admin = kafka.admin();
 
 async function waitForDb(retries = 10, delayMs = 1000) {
   for (let i = 0; i < retries; i++) {
@@ -28,9 +37,11 @@ async function initDb() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
-      username TEXT NOT NULL UNIQUE
+      username TEXT NOT NULL UNIQUE,
+      last_active TIMESTAMP
     )
   `);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active TIMESTAMP`);
 
   const { rows } = await pool.query('SELECT COUNT(*) FROM users');
   if (Number(rows[0].count) === 0) {
@@ -38,6 +49,33 @@ async function initDb() {
       `INSERT INTO users (username) VALUES ('sinem'), ('reyhan'), ('valentin')`
     );
   }
+}
+
+async function startEventConsumer() {
+  await admin.connect();
+  await admin.createTopics({
+    topics: [{ topic: 'message-events', numPartitions: 1, replicationFactor: 1 }],
+    waitForLeaders: true,
+  });
+  await admin.disconnect();
+
+  await consumer.connect();
+  await consumer.subscribe({ topic: 'message-events', fromBeginning: false });
+
+  await consumer.run({
+    eachMessage: async ({ message }) => {
+      try {
+        const event = JSON.parse(message.value.toString());
+        await pool.query('UPDATE users SET last_active = $1 WHERE id = $2', [
+          event.timestamp,
+          event.userId,
+        ]);
+        console.log(`Updated last_active for user ${event.userId} from message-events`);
+      } catch (err) {
+        console.error('Failed to process message-events event:', err);
+      }
+    },
+  });
 }
 
 function readBody(req) {
@@ -52,7 +90,7 @@ function readBody(req) {
 const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'GET' && req.url === '/users') {
-      const { rows } = await pool.query('SELECT id, username FROM users ORDER BY id');
+      const { rows } = await pool.query('SELECT id, username, last_active FROM users ORDER BY id');
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(rows));
       return;
@@ -97,3 +135,7 @@ waitForDb()
     console.error('Failed to start:', err);
     process.exit(1);
   });
+
+startEventConsumer().catch((err) => {
+  console.error('Failed to start Kafka consumer (HTTP API remains available):', err);
+});
