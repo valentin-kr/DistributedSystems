@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { api } from "./api/client";
+import { api, apiUrl } from "./api/client";
 import { loadSession, saveSession } from "./auth/session";
 import { AuthFlow } from "./components/AuthFlow";
 import { CreateRoom } from "./components/CreateRoom";
@@ -23,6 +23,7 @@ import type {
   SessionUser,
   ThreadItem,
 } from "./types";
+import { parseServerTimestamp } from "./utils/time";
 
 type ContextMenuState = {
   x: number;
@@ -119,7 +120,8 @@ export default function App() {
     ];
     return items.sort(
       (a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+        parseServerTimestamp(a.timestamp).getTime() -
+        parseServerTimestamp(b.timestamp).getTime(),
     );
   }, [messages, media]);
 
@@ -136,6 +138,32 @@ export default function App() {
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
   }, [threadItems]);
+
+  useEffect(() => {
+    if (screen !== "room" || !currentRoomId) {
+      return;
+    }
+
+    let closed = false;
+    const source = new EventSource(apiUrl(`/chatrooms/${currentRoomId}/events`));
+
+    source.onmessage = (event) => {
+      if (!closed && event.data === "thread-changed") {
+        void reloadThread();
+      }
+    };
+
+    source.onerror = () => {
+      if (closed) {
+        return;
+      }
+    };
+
+    return () => {
+      closed = true;
+      source.close();
+    };
+  }, [screen, currentRoomId]);
 
   useEffect(() => {
     const hideOnOutsidePointer = (event: globalThis.PointerEvent) => {

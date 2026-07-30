@@ -2,6 +2,7 @@ import { useRef } from "react";
 import type { PointerEvent, RefObject } from "react";
 import { apiUrl } from "../api/client";
 import type { ThreadItem } from "../types";
+import { parseServerTimestamp } from "../utils/time";
 
 const LONG_PRESS_MS = 500;
 
@@ -53,7 +54,7 @@ type ThreadBubbleProps = {
 };
 
 function messageTime(timestamp: string) {
-  return new Date(timestamp).toLocaleTimeString([], {
+  return parseServerTimestamp(timestamp).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });

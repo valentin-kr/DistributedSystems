@@ -1,11 +1,11 @@
 package de.htw.chatroomapi.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record MessageResponse(
                 Integer id,
                 Long seqId,
                 String text,
                 Long authorID,
-                LocalDateTime timestamp) {
+                Instant timestamp) {
 }

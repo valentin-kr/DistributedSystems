@@ -10,6 +10,7 @@ import de.htw.chatroomapi.dto.SendMessageRequest;
 import de.htw.chatroomapi.model.Chatroom;
 import de.htw.chatroomapi.model.Message;
 import de.htw.chatroomapi.service.ChatroomService;
+import de.htw.chatroomapi.service.RoomEventService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.stream.StreamSupport;
@@ -30,9 +32,11 @@ import java.util.stream.StreamSupport;
 public class ChatroomController {
 
     private final ChatroomService chatroomService;
+    private final RoomEventService roomEventService;
 
-    public ChatroomController(ChatroomService chatroomService) {
+    public ChatroomController(ChatroomService chatroomService, RoomEventService roomEventService) {
         this.chatroomService = chatroomService;
+        this.roomEventService = roomEventService;
     }
 
     @PostMapping
@@ -52,7 +56,9 @@ public class ChatroomController {
                 id,
                 request.text(),
                 request.userId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(chatroomService.toMessageResponse(message));
+        MessageResponse response = chatroomService.toMessageResponse(message);
+        roomEventService.emitThreadChanged(id);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/{id}/members")
@@ -98,6 +104,12 @@ public class ChatroomController {
         return ResponseEntity.ok(chatroomService.getAllMessages(id));
     }
 
+    @GetMapping("/{id}/events")
+    public SseEmitter streamRoomEvents(@PathVariable Integer id) {
+        chatroomService.getChatroomById(id);
+        return roomEventService.subscribe(id);
+    }
+
     @GetMapping("/{id}/members")
     public ResponseEntity<List<Long>> getMembers(@PathVariable Integer id) {
         return ResponseEntity.ok(chatroomService.getMembers(id));
@@ -116,6 +128,7 @@ public class ChatroomController {
             @PathVariable Integer messageId,
             @RequestParam Long requesterId) {
         chatroomService.deleteMessage(id, messageId, requesterId);
+        roomEventService.emitThreadChanged(id);
         return ResponseEntity.noContent().build();
     }
 
