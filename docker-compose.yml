@@ -77,13 +77,21 @@ services:
       kafka:
         condition: service_started
 
+  frontend-service:
+    build: ./frontend-service
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_PROXY_TARGET: http://gateway:80
+    depends_on:
+      - gateway
+
   gateway:
     image: nginx:alpine
     ports:
       - "8080:80"
     volumes:
       - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./userClient:/usr/share/nginx/html:ro
     depends_on:
       - chatroom-api
       - user-service

@@ -2,7 +2,7 @@
   "name": "distributed-systems",
   "private": true,
   "scripts": {
-    "start": "./scripts/run-chatroom-service.sh",
+    "start": "docker compose up --build",
     "stop": "docker compose down"
   }
 }

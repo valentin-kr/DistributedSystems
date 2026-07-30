@@ -12,7 +12,10 @@ html {
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   color: #1a1a1a;
   background: #f6f7f9;
   min-height: 100vh;
@@ -70,7 +73,7 @@ main {
   margin-bottom: 1rem;
   font-size: 1.1rem;
   font-weight: 600;
-  border-radius: 12px;
+  border-radius: 8px;
   border: none;
   background: #3550ff;
   color: white;
@@ -98,7 +101,9 @@ form {
   margin: 0.75rem 0;
 }
 
-input, select, button {
+input,
+select,
+button {
   font: inherit;
   font-size: 1rem;
   padding: 0.75rem;
@@ -124,7 +129,8 @@ button {
   min-height: 48px;
 }
 
-button:hover, button:active {
+button:hover,
+button:active {
   background: #2740d6;
 }
 
@@ -158,7 +164,7 @@ button:hover, button:active {
 
 .panel {
   background: white;
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1rem;
   margin-top: 1rem;
   border: 1px solid #eaeaea;
@@ -178,7 +184,7 @@ ul {
   padding: 0.9rem 0.75rem;
   margin-bottom: 0.5rem;
   background: white;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid #eaeaea;
   cursor: pointer;
 }
@@ -204,7 +210,8 @@ ul {
   background: #c0392b;
 }
 
-.inline-action:hover, .inline-action:active {
+.inline-action:hover,
+.inline-action:active {
   background: #962d22;
 }
 
@@ -213,8 +220,6 @@ ul {
   color: #6a737d;
   min-height: 1.1em;
 }
-
-/* ---- Chat room screen ---- */
 
 #screen-room {
   display: flex;
@@ -258,13 +263,14 @@ ul {
   flex-shrink: 0;
 }
 
-.icon-btn:hover, .icon-btn:active {
+.icon-btn:hover,
+.icon-btn:active {
   background: #dde3ff;
 }
 
 #room-info-panel {
   background: #f0f2f6;
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 0.85rem;
   margin: 0.75rem 0;
 }
@@ -294,10 +300,12 @@ ul {
 .bubble {
   max-width: 78%;
   padding: 0.5rem 0.7rem;
-  border-radius: 14px;
+  border-radius: 8px;
   position: relative;
   font-size: 0.92rem;
   touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .bubble.own {
@@ -349,16 +357,11 @@ ul {
   max-width: 220px;
 }
 
-.bubble {
-  user-select: none;
-  -webkit-user-select: none;
-}
-
 #context-menu {
   position: fixed;
   min-width: 130px;
   background: white;
-  border-radius: 10px;
+  border-radius: 8px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   overflow: hidden;
   z-index: 50;
@@ -406,7 +409,7 @@ ul {
 }
 
 .compose-bar .icon-btn,
-.compose-bar button[type='submit'] {
+.compose-bar button[type="submit"] {
   width: auto;
   flex-shrink: 0;
 }
