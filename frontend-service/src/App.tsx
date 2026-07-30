@@ -1,13 +1,18 @@
 import {
-  FormEvent,
   PointerEvent,
+  SyntheticEvent,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import { api, apiUrl } from "./api/client";
+import { api } from "./api/client";
 import { loadSession, saveSession } from "./auth/session";
+import { AuthFlow } from "./components/AuthFlow";
+import { CreateRoom } from "./components/CreateRoom";
+import { JoinRoom } from "./components/JoinRoom";
+import { RoomList } from "./components/RoomList";
+import { RoomScreen } from "./components/RoomScreen";
 import type {
   ApiUser,
   Chatroom,
@@ -19,8 +24,6 @@ import type {
   ThreadItem,
 } from "./types";
 
-const LONG_PRESS_MS = 500;
-
 type ContextMenuState = {
   x: number;
   y: number;
@@ -28,14 +31,7 @@ type ContextMenuState = {
   text: string;
 };
 
-function durationOptions(max: number, unit: "day" | "hour") {
-  return Array.from({ length: max + 1 }, (_, value) => (
-    <option key={value} value={value}>
-      {value} {unit}
-      {value === 1 ? "" : "s"}
-    </option>
-  ));
-}
+type FormSubmitEvent = SyntheticEvent<HTMLFormElement>;
 
 function formatEndTime(totalHours: number) {
   if (totalHours <= 0) {
@@ -49,13 +45,6 @@ function formatEndTime(totalHours: number) {
       minute: "2-digit",
     },
   )}`;
-}
-
-function messageTime(timestamp: string) {
-  return new Date(timestamp).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 export default function App() {
@@ -244,7 +233,7 @@ export default function App() {
     setScreen("room");
   }
 
-  async function requestCode(event: FormEvent<HTMLFormElement>) {
+  async function requestCode(event: FormSubmitEvent) {
     event.preventDefault();
     setAuthError("");
     try {
@@ -263,7 +252,7 @@ export default function App() {
     }
   }
 
-  async function verifyPhone(event: FormEvent<HTMLFormElement>) {
+  async function verifyPhone(event: FormSubmitEvent) {
     event.preventDefault();
     setAuthError("");
     try {
@@ -306,7 +295,7 @@ export default function App() {
     goToChoice();
   }
 
-  async function createRoom(event: FormEvent<HTMLFormElement>) {
+  async function createRoom(event: FormSubmitEvent) {
     event.preventDefault();
     if (!currentUser) return;
     setCreateRoomError("");
@@ -337,7 +326,7 @@ export default function App() {
     }
   }
 
-  async function joinRoom(event: FormEvent<HTMLFormElement>) {
+  async function joinRoom(event: FormSubmitEvent) {
     event.preventDefault();
     if (!currentUser) return;
     setJoinError("");
@@ -354,7 +343,7 @@ export default function App() {
     }
   }
 
-  async function addMember(event: FormEvent<HTMLFormElement>) {
+  async function addMember(event: FormSubmitEvent) {
     event.preventDefault();
     if (!currentRoomId) return;
     const select = event.currentTarget.elements.namedItem(
@@ -381,7 +370,7 @@ export default function App() {
     await loadRoomDetail(currentRoomId);
   }
 
-  async function sendMessage(event: FormEvent<HTMLFormElement>) {
+  async function sendMessage(event: FormSubmitEvent) {
     event.preventDefault();
     if (!currentRoomId || !currentUser || !messageText.trim()) return;
     setMessageError("");
@@ -541,318 +530,82 @@ export default function App() {
           </button>
         </section>
 
-        <section id="screen-auth" className="screen" hidden={screen !== "auth"}>
-          <button
-            type="button"
-            className="back-btn"
-            id="auth-back-btn"
-            onClick={() => void goBackFromFlow()}
-          >
-            &larr; Back
-          </button>
-          <h2>Verify your phone number</h2>
-          <form id="request-code-form" onSubmit={requestCode}>
-            <input
-              id="phone-number"
-              type="tel"
-              placeholder="Phone number"
-              required
-              value={phoneNumber}
-              onChange={(event) => setPhoneNumber(event.target.value)}
-            />
-            <button type="submit">Send code</button>
-          </form>
-          <form
-            id="verify-form"
-            hidden={!showVerifyForm}
-            onSubmit={verifyPhone}
-          >
-            <input
-              id="verify-code"
-              placeholder="Verification code"
-              required
-              value={verifyCode}
-              onChange={(event) => setVerifyCode(event.target.value)}
-            />
-            <input
-              id="signup-username"
-              placeholder="Choose a username (first time only)"
-              value={signupUsername}
-              onChange={(event) => setSignupUsername(event.target.value)}
-            />
-            <button type="submit">Verify &amp; continue</button>
-          </form>
-          <p id="simulated-sms-note" className="sms-note">
-            {smsNote}
-          </p>
-          <p id="auth-error" className="error">
-            {authError}
-          </p>
-        </section>
+        <AuthFlow
+          hidden={screen !== "auth"}
+          phoneNumber={phoneNumber}
+          verifyCode={verifyCode}
+          signupUsername={signupUsername}
+          smsNote={smsNote}
+          authError={authError}
+          showVerifyForm={showVerifyForm}
+          onBack={() => void goBackFromFlow()}
+          onRequestCode={requestCode}
+          onVerifyPhone={verifyPhone}
+          onPhoneNumberChange={setPhoneNumber}
+          onVerifyCodeChange={setVerifyCode}
+          onSignupUsernameChange={setSignupUsername}
+        />
 
-        <section
-          id="screen-create-room"
-          className="screen"
+        <CreateRoom
           hidden={screen !== "create-room"}
-        >
-          <button
-            type="button"
-            className="back-btn"
-            id="create-room-back-btn"
-            onClick={() => void goBackFromFlow()}
-          >
-            &larr; Back
-          </button>
-          <h2>Create a chatroom</h2>
-          <form id="new-room-form" onSubmit={createRoom}>
-            <input
-              id="room-name"
-              placeholder="Chat name"
-              required
-              value={roomName}
-              onChange={(event) => setRoomName(event.target.value)}
-            />
-            <input
-              id="room-description"
-              placeholder="Short description"
-              value={roomDescription}
-              onChange={(event) => setRoomDescription(event.target.value)}
-            />
-            <div className="duration-row">
-              <label>
-                Days
-                <select
-                  id="duration-days"
-                  value={durationDays}
-                  onChange={(event) =>
-                    setDurationDays(Number(event.target.value))
-                  }
-                >
-                  {durationOptions(14, "day")}
-                </select>
-              </label>
-              <label>
-                Hours
-                <select
-                  id="duration-hours"
-                  value={durationHours}
-                  onChange={(event) =>
-                    setDurationHours(Number(event.target.value))
-                  }
-                >
-                  {durationOptions(23, "hour")}
-                </select>
-              </label>
-            </div>
-            <p id="duration-preview" className="sms-note">
-              {durationPreview}
-            </p>
-            <button type="submit">Create room</button>
-          </form>
-          <p id="create-room-error" className="error">
-            {createRoomError}
-          </p>
-        </section>
+          roomName={roomName}
+          roomDescription={roomDescription}
+          durationDays={durationDays}
+          durationHours={durationHours}
+          durationPreview={durationPreview}
+          createRoomError={createRoomError}
+          onBack={() => void goBackFromFlow()}
+          onSubmit={createRoom}
+          onRoomNameChange={setRoomName}
+          onRoomDescriptionChange={setRoomDescription}
+          onDurationDaysChange={setDurationDays}
+          onDurationHoursChange={setDurationHours}
+        />
 
-        <section
-          id="screen-join-room"
-          className="screen"
+        <JoinRoom
           hidden={screen !== "join-room"}
-        >
-          <button
-            type="button"
-            className="back-btn"
-            id="join-room-back-btn"
-            onClick={() => void goBackFromFlow()}
-          >
-            &larr; Back
-          </button>
-          <h2>Join a chatroom</h2>
-          <form id="join-room-form" onSubmit={joinRoom}>
-            <input
-              id="join-code"
-              placeholder="Join code"
-              required
-              value={joinCode}
-              onChange={(event) => setJoinCode(event.target.value)}
-            />
-            <button type="submit">Join room</button>
-          </form>
-          <p id="join-error" className="error">
-            {joinError}
-          </p>
-        </section>
+          joinCode={joinCode}
+          joinError={joinError}
+          onBack={() => void goBackFromFlow()}
+          onSubmit={joinRoom}
+          onJoinCodeChange={setJoinCode}
+        />
 
-        <section
-          id="screen-room-list"
-          className="screen"
+        <RoomList
           hidden={screen !== "room-list"}
-        >
-          <h2>Your chatrooms</h2>
-          <div className="choice-row">
-            <button
-              type="button"
-              id="room-list-create-btn"
-              onClick={startCreateFlow}
-            >
-              Create a chatroom
-            </button>
-            <button
-              type="button"
-              id="room-list-join-btn"
-              onClick={startJoinFlow}
-            >
-              Join a chatroom
-            </button>
-          </div>
-          <p id="no-rooms-text" hidden={myRooms.length > 0}>
-            You haven't joined any chatrooms yet.
-          </p>
-          <ul id="room-list">
-            {myRooms.map((room) => (
-              <li key={room.id} onClick={() => void enterRoom(room.id)}>
-                {room.active ? room.name : `${room.name} (expired)`}
-              </li>
-            ))}
-          </ul>
-        </section>
+          rooms={myRooms}
+          onCreate={startCreateFlow}
+          onJoin={startJoinFlow}
+          onEnterRoom={(roomId) => void enterRoom(roomId)}
+        />
 
-        <section id="screen-room" className="screen" hidden={screen !== "room"}>
-          <div className="room-header">
-            <button
-              type="button"
-              className="back-btn"
-              id="room-back-btn"
-              onClick={() => void showRoomListScreen()}
-            >
-              &larr;
-            </button>
-            <div className="room-header-text">
-              <h2 id="room-title">{currentRoom?.name || ""}</h2>
-              <p
-                id="room-status"
-                className={currentRoom?.active ? "active" : "expired"}
-              >
-                {currentRoom
-                  ? currentRoom.active
-                    ? "Active"
-                    : "Expired - read only"
-                  : ""}
-              </p>
-            </div>
-            <button
-              type="button"
-              id="room-info-btn"
-              className="icon-btn"
-              onClick={() => setShowInfo((value) => !value)}
-            >
-              Info
-            </button>
-          </div>
-
-          <div id="room-info-panel" hidden={!showInfo}>
-            <p id="room-description-text">{currentRoom?.description || ""}</p>
-            <p id="room-join-code">
-              {currentRoom
-                ? currentRoom.active
-                  ? `Join code: ${currentRoom.joinCode} - share this so others can join`
-                  : `Join code: ${currentRoom.joinCode} (chat expired, no longer joinable)`
-                : ""}
-            </p>
-            <h4>Members</h4>
-            <ul id="member-list">
-              {currentRoom?.memberIds.map((memberId) => (
-                <li key={memberId}>
-                  {usernameFor(memberId)}
-                  {memberId === currentRoom.creatorId ? " (creator)" : ""}
-                  {isCreator && memberId !== currentRoom.creatorId ? (
-                    <button
-                      type="button"
-                      className="inline-action"
-                      onClick={() => void removeMember(memberId)}
-                    >
-                      Remove
-                    </button>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-            <form id="add-member-form" onSubmit={addMember}>
-              <select id="add-member-select" name="member">
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.username}
-                  </option>
-                ))}
-              </select>
-              <button type="submit">Add member</button>
-            </form>
-          </div>
-
-          <div id="chat-thread" ref={threadRef}>
-            {threadItems.map((item) => (
-              <ThreadBubble
-                key={`${item.kind}-${item.id}`}
-                item={item}
-                own={item.authorId === currentUser?.id}
-                currentRoomId={currentRoomId}
-                usernameFor={usernameFor}
-                onLongPress={showContextMenu}
-              />
-            ))}
-          </div>
-
-          <form
-            id="send-message-form"
-            className="compose-bar"
-            hidden={!currentRoom?.active}
-            onSubmit={sendMessage}
-          >
-            <button
-              type="button"
-              id="attach-btn"
-              className="icon-btn"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              +
-            </button>
-            <input
-              id="media-file"
-              type="file"
-              hidden
-              ref={fileInputRef}
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (!file) return;
-                void uploadMediaBlob(file, file.name);
-                event.target.value = "";
-              }}
-            />
-            <input
-              id="message-text"
-              placeholder="Type a message"
-              autoComplete="off"
-              value={messageText}
-              onChange={(event) => setMessageText(event.target.value)}
-            />
-            <button
-              type="button"
-              id="record-btn"
-              className="icon-btn"
-              onClick={() => void toggleRecording()}
-            >
-              {isRecording ? "Stop" : "Voice"}
-            </button>
-            <button type="submit">Send</button>
-          </form>
-          <p id="message-error" className="error">
-            {messageError}
-          </p>
-          <p id="media-error" className="error">
-            {mediaError}
-          </p>
-          <p id="record-status">{recordStatus}</p>
-        </section>
+        <RoomScreen
+          hidden={screen !== "room"}
+          room={currentRoom}
+          users={users}
+          currentUser={currentUser}
+          currentRoomId={currentRoomId}
+          threadItems={threadItems}
+          showInfo={showInfo}
+          isCreator={isCreator}
+          messageText={messageText}
+          messageError={messageError}
+          mediaError={mediaError}
+          recordStatus={recordStatus}
+          isRecording={isRecording}
+          fileInputRef={fileInputRef}
+          threadRef={threadRef}
+          usernameFor={usernameFor}
+          onBack={() => void showRoomListScreen()}
+          onToggleInfo={() => setShowInfo((value) => !value)}
+          onAddMember={addMember}
+          onRemoveMember={(userId) => void removeMember(userId)}
+          onSendMessage={sendMessage}
+          onMessageTextChange={setMessageText}
+          onUploadFile={(file) => void uploadMediaBlob(file, file.name)}
+          onToggleRecording={() => void toggleRecording()}
+          onLongPress={showContextMenu}
+        />
       </main>
 
       <div
@@ -880,95 +633,5 @@ export default function App() {
         </button>
       </div>
     </>
-  );
-}
-
-type ThreadBubbleProps = {
-  item: ThreadItem;
-  own: boolean;
-  currentRoomId: number | null;
-  usernameFor: (userId: number) => string;
-  onLongPress: (
-    event: PointerEvent<HTMLDivElement>,
-    messageId: number,
-    text: string,
-  ) => void;
-};
-
-function ThreadBubble({
-  item,
-  own,
-  currentRoomId,
-  usernameFor,
-  onLongPress,
-}: ThreadBubbleProps) {
-  const timerRef = useRef<number | null>(null);
-  const firedLongPressRef = useRef(false);
-
-  function pointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (item.kind !== "message") return;
-    firedLongPressRef.current = false;
-    timerRef.current = window.setTimeout(() => {
-      firedLongPressRef.current = true;
-      onLongPress(event, item.id, item.text);
-    }, LONG_PRESS_MS);
-  }
-
-  function cancelLongPress() {
-    if (timerRef.current) {
-      window.clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  }
-
-  return (
-    <div
-      className={`bubble ${own ? "own" : "other"}`}
-      onPointerDown={pointerDown}
-      onPointerUp={cancelLongPress}
-      onPointerCancel={cancelLongPress}
-      onClickCapture={(event) => {
-        if (firedLongPressRef.current) {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-      }}
-    >
-      {!own ? (
-        <div className="bubble-sender">{usernameFor(item.authorId)}</div>
-      ) : null}
-      {item.kind === "message" ? (
-        <div className="bubble-text">{item.text}</div>
-      ) : null}
-      {item.kind === "media" ? (
-        <MediaContent item={item} currentRoomId={currentRoomId} />
-      ) : null}
-      <div className="bubble-footer">
-        <span className="bubble-time">{messageTime(item.timestamp)}</span>
-      </div>
-    </div>
-  );
-}
-
-function MediaContent({
-  item,
-  currentRoomId,
-}: {
-  item: Extract<ThreadItem, { kind: "media" }>;
-  currentRoomId: number | null;
-}) {
-  if (!currentRoomId) return null;
-  const url = apiUrl(`/chatrooms/${currentRoomId}/media/${item.id}`);
-
-  if (item.contentType?.startsWith("audio/")) {
-    return <audio controls src={url} />;
-  }
-  if (item.contentType?.startsWith("image/")) {
-    return <img src={url} className="bubble-image" alt={item.filename} />;
-  }
-  return (
-    <a href={url} target="_blank" rel="noreferrer">
-      {item.filename}
-    </a>
   );
 }
