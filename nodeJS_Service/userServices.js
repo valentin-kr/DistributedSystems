@@ -1,4 +1,5 @@
 const http = require('http');
+const crypto = require('crypto');
 const { Pool } = require('pg');
 const { Kafka } = require('kafkajs');
 
@@ -38,17 +39,32 @@ async function initDb() {
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
+      phone_number TEXT UNIQUE,
       last_active TIMESTAMP
     )
   `);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active TIMESTAMP`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number TEXT UNIQUE`);
 
   const { rows } = await pool.query('SELECT COUNT(*) FROM users');
   if (Number(rows[0].count) === 0) {
-    await pool.query(
-      `INSERT INTO users (username) VALUES ('sinem'), ('reyhan'), ('valentin')`
-    );
+    await pool.query(`
+      INSERT INTO users (username, phone_number) VALUES
+        ('sinem', '+490000000001'),
+        ('reyhan', '+490000000002'),
+        ('valentin', '+490000000003')
+    `);
   }
+}
+
+// In-memory verification codes: phoneNumber -> { code, expiresAt }
+// A real deployment would use an SMS gateway (Twilio, AWS SNS, ...) here instead
+// of returning the code directly in the response.
+const verificationCodes = new Map();
+const CODE_TTL_MS = 5 * 60 * 1000;
+
+function generateCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
 }
 
 async function startEventConsumer() {
@@ -112,6 +128,67 @@ const server = http.createServer(async (req, res) => {
       );
       res.writeHead(201, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(rows[0]));
+      return;
+    }
+
+    if (req.method === 'POST' && req.url === '/auth/request-code') {
+      const body = await readBody(req);
+      const { phoneNumber } = JSON.parse(body);
+
+      if (!phoneNumber) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'phoneNumber is required' }));
+        return;
+      }
+
+      const code = generateCode();
+      verificationCodes.set(phoneNumber, { code, expiresAt: Date.now() + CODE_TTL_MS });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        message: 'Verification code generated',
+        simulatedSms: true,
+        code,
+      }));
+      return;
+    }
+
+    if (req.method === 'POST' && req.url === '/auth/verify') {
+      const body = await readBody(req);
+      const { phoneNumber, code, username } = JSON.parse(body);
+
+      const entry = verificationCodes.get(phoneNumber);
+      if (!entry || entry.code !== code || Date.now() > entry.expiresAt) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid or expired verification code' }));
+        return;
+      }
+      verificationCodes.delete(phoneNumber);
+
+      const existing = await pool.query(
+        'SELECT id, username, phone_number FROM users WHERE phone_number = $1',
+        [phoneNumber]
+      );
+
+      let user;
+      if (existing.rows.length) {
+        user = existing.rows[0];
+      } else {
+        if (!username) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'username is required to sign up' }));
+          return;
+        }
+        const inserted = await pool.query(
+          'INSERT INTO users (username, phone_number) VALUES ($1, $2) RETURNING id, username, phone_number',
+          [username, phoneNumber]
+        );
+        user = inserted.rows[0];
+      }
+
+      const token = crypto.randomBytes(16).toString('hex');
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ...user, token }));
       return;
     }
 
