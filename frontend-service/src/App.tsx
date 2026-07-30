@@ -155,7 +155,9 @@ export default function App() {
           </div>
           <div id="logged-in-view" hidden={!auth.currentUser}>
             <span className="user-avatar" aria-hidden="true">
-              {auth.currentUser?.displayName.charAt(0).toUpperCase()}
+              {auth.currentUser
+                ? auth.currentUser.displayName.charAt(0).toUpperCase()
+                : ""}
             </span>
             <span id="logged-in-as">
               <small>Signed in as</small>
