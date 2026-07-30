@@ -9,89 +9,117 @@
 <body>
   <header>
     <h1>TimeChat</h1>
-    <div id="user-bar">
-      <div id="logged-out-view">
-        <form id="request-code-form">
-          <input id="phone-number" type="tel" placeholder="Phone number" required />
-          <button type="submit">Send code</button>
-        </form>
-        <form id="verify-form" hidden>
-          <input id="verify-code" placeholder="Verification code" required />
-          <input id="signup-username" placeholder="Username (first time only)" />
-          <button type="submit">Verify &amp; log in</button>
-        </form>
-        <p id="simulated-sms-note" class="sms-note"></p>
-        <p id="auth-error" class="error"></p>
-      </div>
-      <div id="logged-in-view" hidden>
-        <span id="logged-in-as"></span>
-        <button id="logout-btn">Log out</button>
-      </div>
+    <div id="logged-in-view" hidden>
+      <span id="logged-in-as"></span>
+      <button id="logout-btn">Log out</button>
     </div>
   </header>
 
-  <main id="app-main" hidden>
-    <aside id="room-list-panel">
-      <h2>Chatrooms</h2>
+  <main>
+    <section id="screen-choice" class="screen">
+      <h2>What would you like to do?</h2>
+      <button id="choice-create-btn" class="big-choice">Create a chatroom</button>
+      <button id="choice-join-btn" class="big-choice">Join a chatroom</button>
+    </section>
+
+    <section id="screen-auth" class="screen" hidden>
+      <button type="button" class="back-btn" id="auth-back-btn">&larr; Back</button>
+      <h2>Verify your phone number</h2>
+      <form id="request-code-form">
+        <input id="phone-number" type="tel" placeholder="Phone number" required />
+        <button type="submit">Send code</button>
+      </form>
+      <form id="verify-form" hidden>
+        <input id="verify-code" placeholder="Verification code" required />
+        <input id="signup-username" placeholder="Choose a username (first time only)" />
+        <button type="submit">Verify &amp; continue</button>
+      </form>
+      <p id="simulated-sms-note" class="sms-note"></p>
+      <p id="auth-error" class="error"></p>
+    </section>
+
+    <section id="screen-create-room" class="screen" hidden>
+      <button type="button" class="back-btn" id="create-room-back-btn">&larr; Back</button>
+      <h2>Create a chatroom</h2>
       <form id="new-room-form">
-        <input id="room-name" placeholder="Room name" required />
-        <input id="room-description" placeholder="Description" />
-        <label>
-          Expires in (hours)
-          <input id="room-expiry" type="number" min="1" value="24" required />
-        </label>
+        <input id="room-name" placeholder="Chat name" required />
+        <input id="room-description" placeholder="Short description" />
+        <div class="duration-row">
+          <label>
+            Days
+            <select id="duration-days"></select>
+          </label>
+          <label>
+            Hours
+            <select id="duration-hours"></select>
+          </label>
+        </div>
+        <p id="duration-preview" class="sms-note"></p>
         <button type="submit">Create room</button>
       </form>
+      <p id="create-room-error" class="error"></p>
+    </section>
 
+    <section id="screen-join-room" class="screen" hidden>
+      <button type="button" class="back-btn" id="join-room-back-btn">&larr; Back</button>
+      <h2>Join a chatroom</h2>
       <form id="join-room-form">
         <input id="join-code" placeholder="Join code" required />
         <button type="submit">Join room</button>
       </form>
       <p id="join-error" class="error"></p>
+    </section>
 
-      <ul id="room-list"></ul>
-    </aside>
-
-    <section id="room-detail">
-      <p id="no-room-selected">Select or create a chatroom to get started.</p>
-
-      <div id="room-content" hidden>
-        <h2 id="room-title"></h2>
-        <p id="room-description-text"></p>
-        <p id="room-status"></p>
-        <p id="room-join-code"></p>
-
-        <div class="panel">
-          <h3>Members</h3>
-          <ul id="member-list"></ul>
-          <form id="add-member-form">
-            <select id="add-member-select"></select>
-            <button type="submit">Add member</button>
-          </form>
-        </div>
-
-        <div class="panel">
-          <h3>Messages</h3>
-          <ul id="message-list"></ul>
-          <form id="send-message-form">
-            <input id="message-text" placeholder="Type a message" required />
-            <button type="submit">Send</button>
-          </form>
-          <p id="message-error" class="error"></p>
-        </div>
-
-        <div class="panel">
-          <h3>Media</h3>
-          <ul id="media-list"></ul>
-          <form id="upload-media-form">
-            <input id="media-file" type="file" required />
-            <button type="submit">Upload</button>
-          </form>
-          <p id="media-error" class="error"></p>
-        </div>
+    <section id="screen-room-list" class="screen" hidden>
+      <h2>Your chatrooms</h2>
+      <div class="choice-row">
+        <button type="button" id="room-list-create-btn">Create a chatroom</button>
+        <button type="button" id="room-list-join-btn">Join a chatroom</button>
       </div>
+      <p id="no-rooms-text" hidden>You haven't joined any chatrooms yet.</p>
+      <ul id="room-list"></ul>
+    </section>
+
+    <section id="screen-room" class="screen" hidden>
+      <div class="room-header">
+        <button type="button" class="back-btn" id="room-back-btn">&larr;</button>
+        <div class="room-header-text">
+          <h2 id="room-title"></h2>
+          <p id="room-status"></p>
+        </div>
+        <button type="button" id="room-info-btn" class="icon-btn">Info</button>
+      </div>
+
+      <div id="room-info-panel" hidden>
+        <p id="room-description-text"></p>
+        <p id="room-join-code"></p>
+        <h4>Members</h4>
+        <ul id="member-list"></ul>
+        <form id="add-member-form">
+          <select id="add-member-select"></select>
+          <button type="submit">Add member</button>
+        </form>
+      </div>
+
+      <div id="chat-thread"></div>
+
+      <form id="send-message-form" class="compose-bar">
+        <button type="button" id="attach-btn" class="icon-btn">+</button>
+        <input id="media-file" type="file" hidden />
+        <input id="message-text" placeholder="Type a message" autocomplete="off" />
+        <button type="button" id="record-btn" class="icon-btn">Voice</button>
+        <button type="submit">Send</button>
+      </form>
+      <p id="message-error" class="error"></p>
+      <p id="media-error" class="error"></p>
+      <p id="record-status"></p>
     </section>
   </main>
+
+  <div id="context-menu" hidden>
+    <button type="button" id="context-copy-btn">Copy</button>
+    <button type="button" id="context-delete-btn">Delete</button>
+  </div>
 
   <script src="app.js"></script>
 </body>
