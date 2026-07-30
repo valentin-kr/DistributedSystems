@@ -1,155 +1,78 @@
-import {
-  PointerEvent,
-  SyntheticEvent,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { api, apiUrl } from "./api/client";
-import { loadSession, saveSession } from "./auth/session";
+import { useEffect, useRef, useState } from "react";
+import type { SyntheticEvent } from "react";
+import { apiUrl } from "./api/client";
 import { AuthFlow } from "./components/AuthFlow";
 import { CreateRoom } from "./components/CreateRoom";
 import { JoinRoom } from "./components/JoinRoom";
 import { RoomList } from "./components/RoomList";
 import { RoomScreen } from "./components/RoomScreen";
-import type {
-  ApiUser,
-  Chatroom,
-  FlowIntent,
-  Media,
-  Message,
-  Screen,
-  SessionUser,
-  ThreadItem,
-} from "./types";
-import { parseServerTimestamp } from "./utils/time";
-
-type ContextMenuState = {
-  x: number;
-  y: number;
-  messageId: number;
-  text: string;
-};
+import { useAuthFlow } from "./hooks/useAuthFlow";
+import { useChatrooms } from "./hooks/useChatrooms";
+import { useMessageContextMenu } from "./hooks/useMessageContextMenu";
+import { useRoomComposer } from "./hooks/useRoomComposer";
+import type { FlowIntent, Screen } from "./types";
 
 type FormSubmitEvent = SyntheticEvent<HTMLFormElement>;
-
-function formatEndTime(totalHours: number) {
-  if (totalHours <= 0) {
-    return "Pick a duration of at least 1 hour";
-  }
-  const finishAt = new Date(Date.now() + totalHours * 3600 * 1000);
-  return `Chat will end on ${finishAt.toLocaleDateString()} at ${finishAt.toLocaleTimeString(
-    [],
-    {
-      hour: "2-digit",
-      minute: "2-digit",
-    },
-  )}`;
-}
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>("choice");
   const [intent, setIntent] = useState<FlowIntent>(null);
-  const [currentUser, setCurrentUser] = useState<SessionUser | null>(() =>
-    loadSession(),
-  );
-  const [users, setUsers] = useState<ApiUser[]>([]);
-  const [rooms, setRooms] = useState<Chatroom[]>([]);
-  const [currentRoomId, setCurrentRoomId] = useState<number | null>(null);
-  const [currentRoom, setCurrentRoom] = useState<Chatroom | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [media, setMedia] = useState<Media[]>([]);
-  const [showInfo, setShowInfo] = useState(false);
-  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const clearMessageErrorRef = useRef<(() => void) | null>(null);
 
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [verifyCode, setVerifyCode] = useState("");
-  const [signupUsername, setSignupUsername] = useState("");
-  const [smsNote, setSmsNote] = useState("");
-  const [authError, setAuthError] = useState("");
-  const [showVerifyForm, setShowVerifyForm] = useState(false);
+  const auth = useAuthFlow({
+    intent,
+    onAuthenticated: async (nextIntent) => {
+      if (nextIntent === "create") {
+        setScreen("create-room");
+      } else if (nextIntent === "join") {
+        setScreen("join-room");
+      } else {
+        await showRoomListScreen();
+      }
+    },
+    onLogout: () => {
+      chatrooms.resetRooms();
+      setIntent(null);
+      goToChoice();
+    },
+  });
 
-  const [roomName, setRoomName] = useState("");
-  const [roomDescription, setRoomDescription] = useState("");
-  const [durationDays, setDurationDays] = useState(1);
-  const [durationHours, setDurationHours] = useState(0);
-  const [createRoomError, setCreateRoomError] = useState("");
-  const [joinCode, setJoinCode] = useState("");
-  const [joinError, setJoinError] = useState("");
-  const [messageText, setMessageText] = useState("");
-  const [messageError, setMessageError] = useState("");
-  const [mediaError, setMediaError] = useState("");
-  const [recordStatus, setRecordStatus] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
+  const chatrooms = useChatrooms({
+    currentUser: auth.currentUser,
+    onRoomLoaded: () => clearMessageErrorRef.current?.(),
+  });
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const threadRef = useRef<HTMLDivElement | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
+  const composer = useRoomComposer({
+    currentRoomId: chatrooms.currentRoomId,
+    currentUser: auth.currentUser,
+    usernameFor: chatrooms.usernameFor,
+    reloadThread: chatrooms.reloadThread,
+  });
+  clearMessageErrorRef.current = composer.clearMessageError;
 
-  const isCreator = Boolean(
-    currentUser && currentRoom && currentRoom.creatorId === currentUser.id,
-  );
-  const totalHours = durationDays * 24 + durationHours;
-  const durationPreview = formatEndTime(totalHours);
-
-  const myRooms = useMemo(() => {
-    if (!currentUser) return [];
-    return rooms.filter((room) => room.memberIds.includes(currentUser.id));
-  }, [rooms, currentUser]);
-
-  const threadItems = useMemo<ThreadItem[]>(() => {
-    const items: ThreadItem[] = [
-      ...messages.map((message) => ({
-        kind: "message" as const,
-        id: message.id,
-        authorId: message.authorID,
-        text: message.text,
-        timestamp: message.timestamp,
-      })),
-      ...media.map((item) => ({
-        kind: "media" as const,
-        id: item.id,
-        authorId: item.uploaderId,
-        filename: item.filename,
-        contentType: item.contentType,
-        timestamp: item.uploadedAt,
-      })),
-    ];
-    return items.sort(
-      (a, b) =>
-        parseServerTimestamp(a.timestamp).getTime() -
-        parseServerTimestamp(b.timestamp).getTime(),
-    );
-  }, [messages, media]);
+  const contextMenu = useMessageContextMenu({
+    onDeleteMessage: composer.deleteMessage,
+  });
 
   useEffect(() => {
-    saveSession(currentUser);
-  }, [currentUser]);
-
-  useEffect(() => {
-    if (currentUser) {
+    if (auth.currentUser) {
       void showRoomListScreen();
     }
   }, []);
 
   useEffect(() => {
-    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
-  }, [threadItems]);
-
-  useEffect(() => {
-    if (screen !== "room" || !currentRoomId) {
+    if (screen !== "room" || !chatrooms.currentRoomId) {
       return;
     }
 
     let closed = false;
-    const source = new EventSource(apiUrl(`/chatrooms/${currentRoomId}/events`));
+    const source = new EventSource(
+      apiUrl(`/chatrooms/${chatrooms.currentRoomId}/events`),
+    );
 
     source.onmessage = (event) => {
       if (!closed && event.data === "thread-changed") {
-        void reloadThread();
+        void chatrooms.reloadThread();
       }
     };
 
@@ -163,64 +86,7 @@ export default function App() {
       closed = true;
       source.close();
     };
-  }, [screen, currentRoomId]);
-
-  useEffect(() => {
-    const hideOnOutsidePointer = (event: globalThis.PointerEvent) => {
-      if (
-        contextMenu &&
-        menuRef.current &&
-        !menuRef.current.contains(event.target as Node)
-      ) {
-        setContextMenu(null);
-      }
-    };
-    document.addEventListener("pointerdown", hideOnOutsidePointer);
-    return () =>
-      document.removeEventListener("pointerdown", hideOnOutsidePointer);
-  }, [contextMenu]);
-
-  function usernameFor(userId: number) {
-    if (currentUser?.id === userId) return currentUser.username;
-    return (
-      users.find((user) => user.id === userId)?.username || `User ${userId}`
-    );
-  }
-
-  async function loadUsers() {
-    const nextUsers = await api<ApiUser[]>("/users");
-    setUsers(nextUsers);
-    return nextUsers;
-  }
-
-  async function loadRoomsList() {
-    const nextRooms = await api<Chatroom[]>("/chatrooms");
-    setRooms(nextRooms);
-    return nextRooms;
-  }
-
-  async function loadRoomDetail(roomId: number) {
-    const [room, nextMessages, nextMedia] = await Promise.all([
-      api<Chatroom>(`/chatrooms/${roomId}`),
-      api<Message[]>(`/chatrooms/${roomId}/messages`),
-      api<Media[]>(`/chatrooms/${roomId}/media`),
-    ]);
-    setCurrentRoom(room);
-    setMessages(nextMessages);
-    setMedia(nextMedia);
-    setMessageError("");
-    return room;
-  }
-
-  async function reloadThread() {
-    if (!currentRoomId) return;
-    const [nextMessages, nextMedia] = await Promise.all([
-      api<Message[]>(`/chatrooms/${currentRoomId}/messages`),
-      api<Media[]>(`/chatrooms/${currentRoomId}/media`),
-    ]);
-    setMessages(nextMessages);
-    setMedia(nextMedia);
-  }
+  }, [screen, chatrooms.currentRoomId, chatrooms.reloadThread]);
 
   function goToChoice() {
     setIntent(null);
@@ -228,7 +94,7 @@ export default function App() {
   }
 
   async function goBackFromFlow() {
-    if (currentUser) {
+    if (auth.currentUser) {
       await showRoomListScreen();
     } else {
       goToChoice();
@@ -237,297 +103,45 @@ export default function App() {
 
   function startCreateFlow() {
     setIntent("create");
-    setScreen(currentUser ? "create-room" : "auth");
+    setScreen(auth.currentUser ? "create-room" : "auth");
   }
 
   function startJoinFlow() {
     setIntent("join");
-    setScreen(currentUser ? "join-room" : "auth");
+    setScreen(auth.currentUser ? "join-room" : "auth");
   }
 
   async function showRoomListScreen() {
-    await Promise.all([loadUsers(), loadRoomsList()]);
-    setCurrentRoomId(null);
-    setCurrentRoom(null);
-    setShowInfo(false);
+    await chatrooms.showRoomListScreen();
     setScreen("room-list");
   }
 
   async function enterRoom(roomId: number) {
-    setCurrentRoomId(roomId);
-    setShowInfo(false);
-    await loadUsers();
-    await loadRoomDetail(roomId);
+    await chatrooms.enterRoom(roomId);
     setScreen("room");
   }
 
-  async function requestCode(event: FormSubmitEvent) {
-    event.preventDefault();
-    setAuthError("");
-    try {
-      const result = await api<{ code: string }>("/auth/request-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber }),
-      });
-      setSmsNote(
-        `Simulated SMS - your code is ${result.code} (a real deployment would text this to your phone instead)`,
-      );
-      setVerifyCode(result.code);
-      setShowVerifyForm(true);
-    } catch (err) {
-      setAuthError(err instanceof Error ? err.message : "Auth request failed");
-    }
-  }
-
-  async function verifyPhone(event: FormSubmitEvent) {
-    event.preventDefault();
-    setAuthError("");
-    try {
-      const user = await api<ApiUser & { token: string }>("/auth/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phoneNumber,
-          code: verifyCode,
-          username: signupUsername || undefined,
-        }),
-      });
-      const nextUser: SessionUser = {
-        id: user.id,
-        username: user.username,
-        phoneNumber: user.phone_number,
-        token: user.token,
-      };
-      setCurrentUser(nextUser);
-
-      if (intent === "create") {
-        setScreen("create-room");
-      } else if (intent === "join") {
-        setScreen("join-room");
-      } else {
-        await showRoomListScreen();
-      }
-    } catch (err) {
-      setAuthError(err instanceof Error ? err.message : "Verification failed");
-    }
-  }
-
-  function logout() {
-    setCurrentUser(null);
-    setCurrentRoomId(null);
-    setCurrentRoom(null);
-    setIntent(null);
-    setUsers([]);
-    setRooms([]);
-    goToChoice();
-  }
-
   async function createRoom(event: FormSubmitEvent) {
-    event.preventDefault();
-    if (!currentUser) return;
-    setCreateRoomError("");
-
-    if (totalHours <= 0) {
-      setCreateRoomError("Pick a duration of at least 1 hour");
-      return;
-    }
-
-    try {
-      const room = await api<Chatroom>("/chatrooms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: roomName,
-          description: roomDescription,
-          expiryHours: totalHours,
-          userId: currentUser.id,
-        }),
-      });
-      setRoomName("");
-      setRoomDescription("");
-      await enterRoom(room.id);
-    } catch (err) {
-      setCreateRoomError(
-        err instanceof Error ? err.message : "Room creation failed",
-      );
+    if (await chatrooms.createRoom(event)) {
+      setScreen("room");
     }
   }
 
   async function joinRoom(event: FormSubmitEvent) {
-    event.preventDefault();
-    if (!currentUser) return;
-    setJoinError("");
-    try {
-      const room = await api<Chatroom>("/chatrooms/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: joinCode, userId: currentUser.id }),
-      });
-      setJoinCode("");
-      await enterRoom(room.id);
-    } catch (err) {
-      setJoinError(err instanceof Error ? err.message : "Join failed");
+    if (await chatrooms.joinRoom(event)) {
+      setScreen("room");
     }
-  }
-
-  async function addMember(event: FormSubmitEvent) {
-    event.preventDefault();
-    if (!currentRoomId) return;
-    const select = event.currentTarget.elements.namedItem(
-      "member",
-    ) as HTMLSelectElement | null;
-    const userId = Number(select?.value);
-    if (!userId) return;
-    await api<Chatroom>(`/chatrooms/${currentRoomId}/members`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId }),
-    });
-    await loadRoomDetail(currentRoomId);
-  }
-
-  async function removeMember(userId: number) {
-    if (!currentRoomId || !currentUser) return;
-    await api<void>(
-      `/chatrooms/${currentRoomId}/members/${userId}?requesterId=${currentUser.id}`,
-      {
-        method: "DELETE",
-      },
-    );
-    await loadRoomDetail(currentRoomId);
-  }
-
-  async function sendMessage(event: FormSubmitEvent) {
-    event.preventDefault();
-    if (!currentRoomId || !currentUser || !messageText.trim()) return;
-    setMessageError("");
-    try {
-      await api<Message>(`/chatrooms/${currentRoomId}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: messageText, userId: currentUser.id }),
-      });
-      setMessageText("");
-      await reloadThread();
-    } catch (err) {
-      setMessageError(err instanceof Error ? err.message : "Message failed");
-    }
-  }
-
-  async function deleteMessage(messageId: number) {
-    if (!currentRoomId || !currentUser) return;
-    await api<void>(
-      `/chatrooms/${currentRoomId}/messages/${messageId}?requesterId=${currentUser.id}`,
-      {
-        method: "DELETE",
-      },
-    );
-    await reloadThread();
-  }
-
-  async function uploadMediaBlob(blob: Blob, filename: string) {
-    if (!currentRoomId || !currentUser) return;
-    setMediaError("");
-    const formData = new FormData();
-    formData.append("file", blob, filename);
-    const username = encodeURIComponent(usernameFor(currentUser.id));
-
-    try {
-      await api<Media>(
-        `/chatrooms/${currentRoomId}/media?userId=${currentUser.id}&username=${username}`,
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
-      await reloadThread();
-    } catch (err) {
-      setMediaError(err instanceof Error ? err.message : "Upload failed");
-    }
-  }
-
-  async function toggleRecording() {
-    if (mediaRecorderRef.current?.state === "recording") {
-      mediaRecorderRef.current.stop();
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      recordedChunksRef.current = [];
-      const recorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = recorder;
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((track) => track.stop());
-        setIsRecording(false);
-        setRecordStatus("Uploading voice message...");
-        const blob = new Blob(recordedChunksRef.current, {
-          type: "audio/webm",
-        });
-        await uploadMediaBlob(blob, `voice-${Date.now()}.webm`);
-        setRecordStatus("");
-      };
-
-      recorder.start();
-      setIsRecording(true);
-      setRecordStatus("Recording...");
-    } catch (err) {
-      setRecordStatus(
-        `Microphone error: ${err instanceof Error ? err.message : "Unable to start recording"}`,
-      );
-    }
-  }
-
-  function showContextMenu(
-    event: PointerEvent<HTMLDivElement>,
-    messageId: number,
-    text: string,
-  ) {
-    const menuWidth = 130;
-    const menuHeight = 88;
-    setContextMenu({
-      x: Math.min(event.clientX, window.innerWidth - menuWidth - 8),
-      y: Math.min(event.clientY, window.innerHeight - menuHeight - 8),
-      messageId,
-      text,
-    });
-  }
-
-  async function copyContextText() {
-    if (contextMenu) {
-      try {
-        await navigator.clipboard.writeText(contextMenu.text);
-      } catch {
-        // Clipboard API may be unavailable in some demo browsers.
-      }
-    }
-    setContextMenu(null);
-  }
-
-  async function deleteContextMessage() {
-    if (contextMenu) {
-      await deleteMessage(contextMenu.messageId);
-    }
-    setContextMenu(null);
   }
 
   return (
     <>
       <header>
         <h1>TimeChat</h1>
-        <div id="logged-in-view" hidden={!currentUser}>
+        <div id="logged-in-view" hidden={!auth.currentUser}>
           <span id="logged-in-as">
-            {currentUser ? `Logged in as ${currentUser.username}` : ""}
+            {auth.currentUser ? `Logged in as ${auth.currentUser.username}` : ""}
           </span>
-          <button id="logout-btn" type="button" onClick={logout}>
+          <button id="logout-btn" type="button" onClick={auth.logout}>
             Log out
           </button>
         </div>
@@ -560,48 +174,48 @@ export default function App() {
 
         <AuthFlow
           hidden={screen !== "auth"}
-          phoneNumber={phoneNumber}
-          verifyCode={verifyCode}
-          signupUsername={signupUsername}
-          smsNote={smsNote}
-          authError={authError}
-          showVerifyForm={showVerifyForm}
+          phoneNumber={auth.phoneNumber}
+          verifyCode={auth.verifyCode}
+          signupUsername={auth.signupUsername}
+          smsNote={auth.smsNote}
+          authError={auth.authError}
+          showVerifyForm={auth.showVerifyForm}
           onBack={() => void goBackFromFlow()}
-          onRequestCode={requestCode}
-          onVerifyPhone={verifyPhone}
-          onPhoneNumberChange={setPhoneNumber}
-          onVerifyCodeChange={setVerifyCode}
-          onSignupUsernameChange={setSignupUsername}
+          onRequestCode={auth.requestCode}
+          onVerifyPhone={auth.verifyPhone}
+          onPhoneNumberChange={auth.setPhoneNumber}
+          onVerifyCodeChange={auth.setVerifyCode}
+          onSignupUsernameChange={auth.setSignupUsername}
         />
 
         <CreateRoom
           hidden={screen !== "create-room"}
-          roomName={roomName}
-          roomDescription={roomDescription}
-          durationDays={durationDays}
-          durationHours={durationHours}
-          durationPreview={durationPreview}
-          createRoomError={createRoomError}
+          roomName={chatrooms.roomName}
+          roomDescription={chatrooms.roomDescription}
+          durationDays={chatrooms.durationDays}
+          durationHours={chatrooms.durationHours}
+          durationPreview={chatrooms.durationPreview}
+          createRoomError={chatrooms.createRoomError}
           onBack={() => void goBackFromFlow()}
           onSubmit={createRoom}
-          onRoomNameChange={setRoomName}
-          onRoomDescriptionChange={setRoomDescription}
-          onDurationDaysChange={setDurationDays}
-          onDurationHoursChange={setDurationHours}
+          onRoomNameChange={chatrooms.setRoomName}
+          onRoomDescriptionChange={chatrooms.setRoomDescription}
+          onDurationDaysChange={chatrooms.setDurationDays}
+          onDurationHoursChange={chatrooms.setDurationHours}
         />
 
         <JoinRoom
           hidden={screen !== "join-room"}
-          joinCode={joinCode}
-          joinError={joinError}
+          joinCode={chatrooms.joinCode}
+          joinError={chatrooms.joinError}
           onBack={() => void goBackFromFlow()}
           onSubmit={joinRoom}
-          onJoinCodeChange={setJoinCode}
+          onJoinCodeChange={chatrooms.setJoinCode}
         />
 
         <RoomList
           hidden={screen !== "room-list"}
-          rooms={myRooms}
+          rooms={chatrooms.myRooms}
           onCreate={startCreateFlow}
           onJoin={startJoinFlow}
           onEnterRoom={(roomId) => void enterRoom(roomId)}
@@ -609,53 +223,55 @@ export default function App() {
 
         <RoomScreen
           hidden={screen !== "room"}
-          room={currentRoom}
-          users={users}
-          currentUser={currentUser}
-          currentRoomId={currentRoomId}
-          threadItems={threadItems}
-          showInfo={showInfo}
-          isCreator={isCreator}
-          messageText={messageText}
-          messageError={messageError}
-          mediaError={mediaError}
-          recordStatus={recordStatus}
-          isRecording={isRecording}
-          fileInputRef={fileInputRef}
-          threadRef={threadRef}
-          usernameFor={usernameFor}
+          room={chatrooms.currentRoom}
+          users={chatrooms.users}
+          currentUser={auth.currentUser}
+          currentRoomId={chatrooms.currentRoomId}
+          threadItems={chatrooms.threadItems}
+          showInfo={chatrooms.showInfo}
+          isCreator={chatrooms.isCreator}
+          messageText={composer.messageText}
+          messageError={composer.messageError}
+          mediaError={composer.mediaError}
+          recordStatus={composer.recordStatus}
+          isRecording={composer.isRecording}
+          fileInputRef={composer.fileInputRef}
+          threadRef={chatrooms.threadRef}
+          usernameFor={chatrooms.usernameFor}
           onBack={() => void showRoomListScreen()}
-          onToggleInfo={() => setShowInfo((value) => !value)}
-          onAddMember={addMember}
-          onRemoveMember={(userId) => void removeMember(userId)}
-          onSendMessage={sendMessage}
-          onMessageTextChange={setMessageText}
-          onUploadFile={(file) => void uploadMediaBlob(file, file.name)}
-          onToggleRecording={() => void toggleRecording()}
-          onLongPress={showContextMenu}
+          onToggleInfo={() => chatrooms.setShowInfo((value) => !value)}
+          onAddMember={chatrooms.addMember}
+          onRemoveMember={(userId) => void chatrooms.removeMember(userId)}
+          onSendMessage={composer.sendMessage}
+          onMessageTextChange={composer.setMessageText}
+          onUploadFile={(file) => void composer.uploadMediaBlob(file, file.name)}
+          onToggleRecording={() => void composer.toggleRecording()}
+          onLongPress={contextMenu.showContextMenu}
         />
       </main>
 
       <div
         id="context-menu"
-        hidden={!contextMenu}
-        ref={menuRef}
+        hidden={!contextMenu.contextMenu}
+        ref={contextMenu.menuRef}
         style={
-          contextMenu ? { left: contextMenu.x, top: contextMenu.y } : undefined
+          contextMenu.contextMenu
+            ? { left: contextMenu.contextMenu.x, top: contextMenu.contextMenu.y }
+            : undefined
         }
       >
         <button
           type="button"
           id="context-copy-btn"
-          onClick={() => void copyContextText()}
+          onClick={() => void contextMenu.copyContextText()}
         >
           Copy
         </button>
         <button
           type="button"
           id="context-delete-btn"
-          hidden={!isCreator}
-          onClick={() => void deleteContextMessage()}
+          hidden={!chatrooms.isCreator}
+          onClick={() => void contextMenu.deleteContextMessage()}
         >
           Delete
         </button>
