@@ -2,7 +2,7 @@ package de.htw.chatroomapi.model;
 
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 public class Media {
@@ -18,7 +18,7 @@ public class Media {
     private Long uploaderId;
     private String uploaderName;
 
-    private LocalDateTime uploadedAt;
+    private Instant uploadedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chatroom_id")
@@ -68,11 +68,11 @@ public class Media {
         this.uploaderName = uploaderName;
     }
 
-    public LocalDateTime getUploadedAt() {
+    public Instant getUploadedAt() {
         return uploadedAt;
     }
 
-    public void setUploadedAt(LocalDateTime uploadedAt) {
+    public void setUploadedAt(Instant uploadedAt) {
         this.uploadedAt = uploadedAt;
     }
 

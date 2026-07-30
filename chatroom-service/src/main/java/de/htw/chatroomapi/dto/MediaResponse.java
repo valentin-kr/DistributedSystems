@@ -1,6 +1,6 @@
 package de.htw.chatroomapi.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record MediaResponse(
         Integer id,
@@ -8,6 +8,6 @@ public record MediaResponse(
         String contentType,
         Long uploaderId,
         String uploaderName,
-        LocalDateTime uploadedAt
+        Instant uploadedAt
 ) {
 }

@@ -5,4 +5,8 @@
 
 node_modules/
 target/
+
 .idea
+.codegraph/
+
+**/dist/

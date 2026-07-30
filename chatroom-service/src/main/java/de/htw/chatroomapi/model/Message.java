@@ -2,7 +2,7 @@ package de.htw.chatroomapi.model;
 
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 public class Message {
@@ -13,7 +13,7 @@ public class Message {
 
     private Long seqId;
     private String text;
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 
     private Long authorId;
 
@@ -29,7 +29,7 @@ public class Message {
         this.authorId = userId;
     }
 
-    public void setTimestamp(LocalDateTime time) {
+    public void setTimestamp(Instant time) {
         this.timestamp = time;
     }
 
@@ -61,7 +61,7 @@ public class Message {
         return authorId;
     }
 
-    public LocalDateTime getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 

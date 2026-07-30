@@ -16,7 +16,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -57,7 +57,7 @@ public class MediaService {
         media.setStoragePath(storedName);
         media.setUploaderId(userId);
         media.setUploaderName(username);
-        media.setUploadedAt(LocalDateTime.now());
+        media.setUploadedAt(Instant.now());
         media.setChatroom(room);
 
         return toResponse(mediaRepo.save(media));

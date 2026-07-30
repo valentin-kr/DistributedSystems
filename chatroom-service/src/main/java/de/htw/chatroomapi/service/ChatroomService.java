@@ -8,6 +8,7 @@ import de.htw.chatroomapi.repo.MessageRepo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
@@ -134,7 +135,7 @@ public class ChatroomService {
         Message message = new Message();
         message.setText(text);
         message.setAuthorId(userId);
-        message.setTimestamp(LocalDateTime.now());
+        message.setTimestamp(Instant.now());
         message.setChatroom(room);
 
         long nextSeqId = messageRepository.findMaxSeqIdByChatroomId(chatroomId) + 1;
