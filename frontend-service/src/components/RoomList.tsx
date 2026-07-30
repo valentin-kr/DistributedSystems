@@ -60,7 +60,9 @@ export function RoomList({
               className="room-card"
               onClick={() => onEnterRoom(room.id)}
             >
-              <span className={`room-card-icon ${room.active ? "" : "expired"}`}>
+              <span
+                className={`room-card-icon ${room.active ? "" : "expired"}`}
+              >
                 {room.active ? (
                   <MessageCircle size={21} aria-hidden="true" />
                 ) : (
@@ -70,7 +72,9 @@ export function RoomList({
               <span className="room-card-copy">
                 <span className="room-card-title-row">
                   <strong>{room.name}</strong>
-                  <span className={`status-badge ${room.active ? "active" : "expired"}`}>
+                  <span
+                    className={`status-badge ${room.active ? "active" : "expired"}`}
+                  >
                     {room.active ? "Active" : "Expired"}
                   </span>
                 </span>
@@ -83,7 +87,11 @@ export function RoomList({
                   {room.memberIds.length === 1 ? "member" : "members"}
                 </span>
               </span>
-              <ArrowRight className="room-card-arrow" size={20} aria-hidden="true" />
+              <ArrowRight
+                className="room-card-arrow"
+                size={20}
+                aria-hidden="true"
+              />
             </button>
           </li>
         ))}

@@ -45,7 +45,7 @@ public class ChatroomService {
         Chatroom room = chatroomRepository.findByJoinCode(code)
                 .orElseThrow(() -> new InvalidJoinCodeException(code));
         if (!isActive(room)) {
-            throw new ChatroomExpiredException(room.getId());
+            throw new ChatroomExpiredException(room.getName());
         }
         room.addMember(userId);
         return chatroomRepository.save(room);
@@ -126,7 +126,7 @@ public class ChatroomService {
     public Message sendMessage(Integer chatroomId, String text, Long userId) {
         Chatroom room = findRoom(chatroomId);
         if (!isActive(room)) {
-            throw new ChatroomExpiredException(chatroomId);
+            throw new ChatroomExpiredException(room.getName());
         }
         if (!room.hasMember(userId)) {
             throw new NotChatroomMemberException(userId, chatroomId);

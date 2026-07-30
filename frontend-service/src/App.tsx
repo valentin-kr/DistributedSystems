@@ -155,11 +155,11 @@ export default function App() {
           </div>
           <div id="logged-in-view" hidden={!auth.currentUser}>
             <span className="user-avatar" aria-hidden="true">
-              {auth.currentUser?.username.charAt(0).toUpperCase()}
+              {auth.currentUser?.displayName.charAt(0).toUpperCase()}
             </span>
             <span id="logged-in-as">
               <small>Signed in as</small>
-              <strong>{auth.currentUser?.username}</strong>
+              <strong>{auth.currentUser?.displayName}</strong>
             </span>
             <button
               id="logout-btn"
@@ -231,6 +231,7 @@ export default function App() {
           smsNote={auth.smsNote}
           authError={auth.authError}
           showVerifyForm={auth.showVerifyForm}
+          isSignupFlow={auth.isSignupFlow}
           onBack={() => void goBackFromFlow()}
           onRequestCode={auth.requestCode}
           onVerifyPhone={auth.verifyPhone}

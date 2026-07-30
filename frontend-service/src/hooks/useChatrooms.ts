@@ -80,10 +80,14 @@ export function useChatrooms({
 
   const usernameFor = useCallback(
     (userId: number) => {
-      if (currentUser?.id === userId) return currentUser.username;
-      return (
-        users.find((user) => user.id === userId)?.username || `User ${userId}`
-      );
+      const user = users.find((candidate) => candidate.id === userId);
+      if (user?.display_name || user?.username) {
+        return user.display_name || user.username;
+      }
+      if (currentUser?.id === userId) {
+        return currentUser.displayName;
+      }
+      return `User ${userId}`;
     },
     [currentUser, users],
   );

@@ -61,7 +61,9 @@ export function CreateRoom({
         <div>
           <span className="eyebrow">New conversation</span>
           <h2>Create a chatroom</h2>
-          <p>Choose how long the room and its messages should remain available.</p>
+          <p>
+            Choose how long the room and its messages should remain available.
+          </p>
         </div>
       </div>
       <form id="new-room-form" onSubmit={onSubmit}>

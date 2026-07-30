@@ -1,12 +1,5 @@
 import type { RefObject, SyntheticEvent } from "react";
-import {
-  ArrowLeft,
-  Info,
-  Mic,
-  Paperclip,
-  Send,
-  Square,
-} from "lucide-react";
+import { ArrowLeft, Info, Mic, Paperclip, Send, Square } from "lucide-react";
 import { ChatThread } from "./ChatThread";
 import { RoomInfoPanel } from "./RoomInfoPanel";
 import type { ChatThreadLongPress } from "./ChatThread";

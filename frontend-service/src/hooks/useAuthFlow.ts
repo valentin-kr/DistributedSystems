@@ -26,6 +26,7 @@ export function useAuthFlow({
   const [smsNote, setSmsNote] = useState("");
   const [authError, setAuthError] = useState("");
   const [showVerifyForm, setShowVerifyForm] = useState(false);
+  const [isSignupFlow, setIsSignupFlow] = useState(false);
 
   useEffect(() => {
     saveSession(currentUser);
@@ -35,11 +36,16 @@ export function useAuthFlow({
     event.preventDefault();
     setAuthError("");
     try {
-      const result = await api<{ code: string }>("/auth/request-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNumber }),
-      });
+      const result = await api<{ code: string; isNewUser: boolean }>(
+        "/auth/request-code",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phoneNumber }),
+        },
+      );
+      setIsSignupFlow(result.isNewUser);
+      setSignupUsername("");
       setSmsNote(
         `Simulated SMS - your code is ${result.code} (a real deployment would text this to your phone instead)`,
       );
@@ -48,6 +54,16 @@ export function useAuthFlow({
     } catch (err) {
       setAuthError(err instanceof Error ? err.message : "Auth request failed");
     }
+  }
+
+  function updatePhoneNumber(value: string) {
+    setPhoneNumber(value);
+    setVerifyCode("");
+    setSignupUsername("");
+    setSmsNote("");
+    setAuthError("");
+    setShowVerifyForm(false);
+    setIsSignupFlow(false);
   }
 
   async function verifyPhone(event: FormSubmitEvent) {
@@ -60,12 +76,13 @@ export function useAuthFlow({
         body: JSON.stringify({
           phoneNumber,
           code: verifyCode,
-          username: signupUsername || undefined,
+          displayName: isSignupFlow ? signupUsername : undefined,
         }),
       });
       const nextUser: SessionUser = {
         id: user.id,
         username: user.username,
+        displayName: user.display_name || user.username,
         phoneNumber: user.phone_number,
         token: user.token,
       };
@@ -89,10 +106,11 @@ export function useAuthFlow({
     smsNote,
     authError,
     showVerifyForm,
+    isSignupFlow,
     requestCode,
     verifyPhone,
     logout,
-    setPhoneNumber,
+    setPhoneNumber: updatePhoneNumber,
     setVerifyCode,
     setSignupUsername,
   };

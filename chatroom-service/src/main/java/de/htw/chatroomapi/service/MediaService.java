@@ -41,7 +41,7 @@ public class MediaService {
                 .orElseThrow(() -> new ChatroomNotFoundException(chatroomId));
 
         if (room.isExpired()) {
-            throw new ChatroomExpiredException(chatroomId);
+            throw new ChatroomExpiredException(room.getName());
         }
 
         String storedName = UUID.randomUUID() + "-" + file.getOriginalFilename();

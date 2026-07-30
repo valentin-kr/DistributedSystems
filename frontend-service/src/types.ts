@@ -11,6 +11,7 @@ export type FlowIntent = "create" | "join" | null;
 export type SessionUser = {
   id: number;
   username: string;
+  displayName: string;
   phoneNumber?: string;
   token?: string;
 };
@@ -18,8 +19,10 @@ export type SessionUser = {
 export type ApiUser = {
   id: number;
   username: string;
+  display_name?: string | null;
   phone_number?: string;
   last_active?: string | null;
+  zitadel_sub?: string | null;
 };
 
 export type Chatroom = {

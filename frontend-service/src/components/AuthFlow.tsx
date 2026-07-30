@@ -11,6 +11,7 @@ type AuthFlowProps = {
   smsNote: string;
   authError: string;
   showVerifyForm: boolean;
+  isSignupFlow: boolean;
   onBack: () => void;
   onRequestCode: (event: FormSubmitEvent) => void;
   onVerifyPhone: (event: FormSubmitEvent) => void;
@@ -27,6 +28,7 @@ export function AuthFlow({
   smsNote,
   authError,
   showVerifyForm,
+  isSignupFlow,
   onBack,
   onRequestCode,
   onVerifyPhone,
@@ -51,8 +53,16 @@ export function AuthFlow({
         </span>
         <div>
           <span className="eyebrow">Secure access</span>
-          <h2>Verify your phone number</h2>
-          <p>We use a one-time code to keep your conversations private.</p>
+          <h2>
+            {showVerifyForm && isSignupFlow
+              ? "Create your profile"
+              : "Verify your phone number"}
+          </h2>
+          <p>
+            {showVerifyForm && isSignupFlow
+              ? "This phone number is new. Add a display name, then continue."
+              : "We use a one-time code to keep your conversations private."}
+          </p>
         </div>
       </div>
       <form id="request-code-form" onSubmit={onRequestCode}>
@@ -77,12 +87,18 @@ export function AuthFlow({
           value={verifyCode}
           onChange={(event) => onVerifyCodeChange(event.target.value)}
         />
-        <input
-          id="signup-username"
-          placeholder="Choose a username (first time only)"
-          value={signupUsername}
-          onChange={(event) => onSignupUsernameChange(event.target.value)}
-        />
+        {isSignupFlow ? (
+          <>
+            <input
+              id="signup-username"
+              placeholder="Display name"
+              required
+              value={signupUsername}
+              onChange={(event) => onSignupUsernameChange(event.target.value)}
+            />
+            <p className="form-hint">Only needed when creating a new account.</p>
+          </>
+        ) : null}
         <button type="submit">Verify &amp; continue</button>
       </form>
       <p id="simulated-sms-note" className="sms-note">

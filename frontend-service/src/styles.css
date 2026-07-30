@@ -1,7 +1,11 @@
 :root {
   color-scheme: light;
   font-family:
-    Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Inter,
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
     sans-serif;
   font-synthesis: none;
   --ink: #17211b;
@@ -42,7 +46,11 @@ body {
   margin: 0;
   color: var(--ink);
   background:
-    radial-gradient(circle at 12% -10%, rgba(101, 155, 116, 0.18), transparent 28rem),
+    radial-gradient(
+      circle at 12% -10%,
+      rgba(101, 155, 116, 0.18),
+      transparent 28rem
+    ),
     var(--canvas);
 }
 
@@ -525,6 +533,13 @@ label {
 
 .sms-note svg {
   flex: 0 0 auto;
+}
+
+.form-hint {
+  margin: -0.35rem 0 0.1rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
 }
 
 .error {
@@ -1016,7 +1031,11 @@ label {
   gap: 0.45rem;
   margin: 0;
   padding: 0.65rem 0;
-  background: linear-gradient(to bottom, rgba(237, 241, 235, 0.5), var(--canvas) 25%);
+  background: linear-gradient(
+    to bottom,
+    rgba(237, 241, 235, 0.5),
+    var(--canvas) 25%
+  );
 }
 
 .compose-bar input {
