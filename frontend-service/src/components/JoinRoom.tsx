@@ -1,4 +1,5 @@
 import type { SyntheticEvent } from "react";
+import { ArrowLeft, KeyRound, LogIn } from "lucide-react";
 
 type FormSubmitEvent = SyntheticEvent<HTMLFormElement>;
 
@@ -27,9 +28,19 @@ export function JoinRoom({
         id="join-room-back-btn"
         onClick={onBack}
       >
-        &larr; Back
+        <ArrowLeft size={18} aria-hidden="true" />
+        <span>Back</span>
       </button>
-      <h2>Join a chatroom</h2>
+      <div className="screen-heading">
+        <span className="screen-icon" aria-hidden="true">
+          <KeyRound size={22} />
+        </span>
+        <div>
+          <span className="eyebrow">Have an invite?</span>
+          <h2>Join a chatroom</h2>
+          <p>Enter the six-character code shared by the room creator.</p>
+        </div>
+      </div>
       <form id="join-room-form" onSubmit={onSubmit}>
         <input
           id="join-code"
@@ -38,7 +49,10 @@ export function JoinRoom({
           value={joinCode}
           onChange={(event) => onJoinCodeChange(event.target.value)}
         />
-        <button type="submit">Join room</button>
+        <button type="submit">
+          <LogIn size={18} aria-hidden="true" />
+          Join room
+        </button>
       </form>
       <p id="join-error" className="error">
         {joinError}

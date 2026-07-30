@@ -1,4 +1,12 @@
 import type { RefObject, SyntheticEvent } from "react";
+import {
+  ArrowLeft,
+  Info,
+  Mic,
+  Paperclip,
+  Send,
+  Square,
+} from "lucide-react";
 import { ChatThread } from "./ChatThread";
 import { RoomInfoPanel } from "./RoomInfoPanel";
 import type { ChatThreadLongPress } from "./ChatThread";
@@ -70,7 +78,8 @@ export function RoomScreen({
           id="room-back-btn"
           onClick={onBack}
         >
-          &larr;
+          <ArrowLeft size={20} aria-hidden="true" />
+          <span className="sr-only">Back to chatrooms</span>
         </button>
         <div className="room-header-text">
           <h2 id="room-title">{room?.name || ""}</h2>
@@ -84,7 +93,8 @@ export function RoomScreen({
           className="icon-btn"
           onClick={onToggleInfo}
         >
-          Info
+          <Info size={18} aria-hidden="true" />
+          <span>Info</span>
         </button>
       </div>
 
@@ -119,7 +129,8 @@ export function RoomScreen({
           className="icon-btn"
           onClick={() => fileInputRef.current?.click()}
         >
-          +
+          <Paperclip size={19} aria-hidden="true" />
+          <span className="sr-only">Attach file</span>
         </button>
         <input
           id="media-file"
@@ -145,10 +156,21 @@ export function RoomScreen({
           id="record-btn"
           className="icon-btn"
           onClick={onToggleRecording}
+          aria-pressed={isRecording}
         >
-          {isRecording ? "Stop" : "Voice"}
+          {isRecording ? (
+            <Square size={17} fill="currentColor" aria-hidden="true" />
+          ) : (
+            <Mic size={19} aria-hidden="true" />
+          )}
+          <span className="sr-only">
+            {isRecording ? "Stop recording" : "Record voice message"}
+          </span>
         </button>
-        <button type="submit">Send</button>
+        <button type="submit" className="send-btn" aria-label="Send message">
+          <Send size={18} aria-hidden="true" />
+          <span className="send-label">Send</span>
+        </button>
       </form>
       <p id="message-error" className="error">
         {messageError}

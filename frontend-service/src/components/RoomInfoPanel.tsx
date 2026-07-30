@@ -1,4 +1,5 @@
 import type { SyntheticEvent } from "react";
+import { KeyRound, UserPlus, Users, X } from "lucide-react";
 import type { ApiUser, Chatroom } from "../types";
 
 type FormSubmitEvent = SyntheticEvent<HTMLFormElement>;
@@ -25,14 +26,20 @@ export function RoomInfoPanel({
   return (
     <div id="room-info-panel" hidden={hidden}>
       <p id="room-description-text">{room?.description || ""}</p>
-      <p id="room-join-code">
-        {room
-          ? room.active
-            ? `Join code: ${room.joinCode} - share this so others can join`
-            : `Join code: ${room.joinCode} (chat expired, no longer joinable)`
-          : ""}
-      </p>
-      <h4>Members</h4>
+      <div id="room-join-code">
+        <KeyRound size={18} aria-hidden="true" />
+        <span>
+          <small>Join code</small>
+          <strong>{room?.joinCode}</strong>
+        </span>
+        <span className="join-code-note">
+          {room?.active ? "Share to invite others" : "Room no longer joinable"}
+        </span>
+      </div>
+      <h4>
+        <Users size={17} aria-hidden="true" />
+        Members
+      </h4>
       <ul id="member-list">
         {room?.memberIds.map((memberId) => (
           <li key={memberId}>
@@ -44,7 +51,8 @@ export function RoomInfoPanel({
                 className="inline-action"
                 onClick={() => onRemoveMember(memberId)}
               >
-                Remove
+                <X size={14} aria-hidden="true" />
+                <span>Remove</span>
               </button>
             ) : null}
           </li>
@@ -58,7 +66,10 @@ export function RoomInfoPanel({
             </option>
           ))}
         </select>
-        <button type="submit">Add member</button>
+        <button type="submit">
+          <UserPlus size={17} aria-hidden="true" />
+          Add member
+        </button>
       </form>
     </div>
   );

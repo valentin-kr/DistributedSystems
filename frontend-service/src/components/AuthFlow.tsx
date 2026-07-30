@@ -1,4 +1,5 @@
 import type { SyntheticEvent } from "react";
+import { ArrowLeft, MessageSquareText, ShieldCheck } from "lucide-react";
 
 type FormSubmitEvent = SyntheticEvent<HTMLFormElement>;
 
@@ -41,9 +42,19 @@ export function AuthFlow({
         id="auth-back-btn"
         onClick={onBack}
       >
-        &larr; Back
+        <ArrowLeft size={18} aria-hidden="true" />
+        <span>Back</span>
       </button>
-      <h2>Verify your phone number</h2>
+      <div className="screen-heading">
+        <span className="screen-icon" aria-hidden="true">
+          <ShieldCheck size={23} />
+        </span>
+        <div>
+          <span className="eyebrow">Secure access</span>
+          <h2>Verify your phone number</h2>
+          <p>We use a one-time code to keep your conversations private.</p>
+        </div>
+      </div>
       <form id="request-code-form" onSubmit={onRequestCode}>
         <input
           id="phone-number"
@@ -53,7 +64,10 @@ export function AuthFlow({
           value={phoneNumber}
           onChange={(event) => onPhoneNumberChange(event.target.value)}
         />
-        <button type="submit">Send code</button>
+        <button type="submit">
+          <MessageSquareText size={18} aria-hidden="true" />
+          Send code
+        </button>
       </form>
       <form id="verify-form" hidden={!showVerifyForm} onSubmit={onVerifyPhone}>
         <input

@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { SyntheticEvent } from "react";
+import {
+  ArrowRight,
+  LogIn,
+  LogOut,
+  MessageCircle,
+  Plus,
+} from "lucide-react";
 import { apiUrl } from "./api/client";
 import { AuthFlow } from "./components/AuthFlow";
 import { CreateRoom } from "./components/CreateRoom";
@@ -135,15 +142,36 @@ export default function App() {
 
   return (
     <>
-      <header>
-        <h1>TimeChat</h1>
-        <div id="logged-in-view" hidden={!auth.currentUser}>
-          <span id="logged-in-as">
-            {auth.currentUser ? `Logged in as ${auth.currentUser.username}` : ""}
-          </span>
-          <button id="logout-btn" type="button" onClick={auth.logout}>
-            Log out
-          </button>
+      <header className="app-header">
+        <div className="app-header-inner">
+          <div className="brand">
+            <span className="brand-mark" aria-hidden="true">
+              <MessageCircle size={21} strokeWidth={2.4} />
+            </span>
+            <div className="brand-copy">
+              <h1>TimeChat</h1>
+              <span>Chats that stay in the moment</span>
+            </div>
+          </div>
+          <div id="logged-in-view" hidden={!auth.currentUser}>
+            <span className="user-avatar" aria-hidden="true">
+              {auth.currentUser?.username.charAt(0).toUpperCase()}
+            </span>
+            <span id="logged-in-as">
+              <small>Signed in as</small>
+              <strong>{auth.currentUser?.username}</strong>
+            </span>
+            <button
+              id="logout-btn"
+              className="header-action"
+              type="button"
+              onClick={auth.logout}
+              aria-label="Log out"
+              title="Log out"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -153,23 +181,46 @@ export default function App() {
           className="screen"
           hidden={screen !== "choice"}
         >
-          <h2>What would you like to do?</h2>
-          <button
-            id="choice-create-btn"
-            className="big-choice"
-            type="button"
-            onClick={startCreateFlow}
-          >
-            Create a chatroom
-          </button>
-          <button
-            id="choice-join-btn"
-            className="big-choice"
-            type="button"
-            onClick={startJoinFlow}
-          >
-            Join a chatroom
-          </button>
+          <div className="intro-copy">
+            <span className="eyebrow">Private. Temporary. Together.</span>
+            <h2>Make space for the conversation</h2>
+            <p>
+              Start a room for your group or enter one with a six-character
+              invite code.
+            </p>
+          </div>
+          <div className="choice-grid">
+            <button
+              id="choice-create-btn"
+              className="big-choice primary-choice"
+              type="button"
+              onClick={startCreateFlow}
+            >
+              <span className="choice-icon" aria-hidden="true">
+                <Plus size={24} />
+              </span>
+              <span className="choice-copy">
+                <strong>Create a chatroom</strong>
+                <small>Set a name and expiry time</small>
+              </span>
+              <ArrowRight className="choice-arrow" size={20} aria-hidden="true" />
+            </button>
+            <button
+              id="choice-join-btn"
+              className="big-choice secondary-choice"
+              type="button"
+              onClick={startJoinFlow}
+            >
+              <span className="choice-icon" aria-hidden="true">
+                <LogIn size={23} />
+              </span>
+              <span className="choice-copy">
+                <strong>Join a chatroom</strong>
+                <small>Use an invite code</small>
+              </span>
+              <ArrowRight className="choice-arrow" size={20} aria-hidden="true" />
+            </button>
+          </div>
         </section>
 
         <AuthFlow

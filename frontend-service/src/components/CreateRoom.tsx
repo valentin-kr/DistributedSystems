@@ -1,4 +1,5 @@
 import type { SyntheticEvent } from "react";
+import { ArrowLeft, Clock3, Plus } from "lucide-react";
 
 type FormSubmitEvent = SyntheticEvent<HTMLFormElement>;
 
@@ -50,9 +51,19 @@ export function CreateRoom({
         id="create-room-back-btn"
         onClick={onBack}
       >
-        &larr; Back
+        <ArrowLeft size={18} aria-hidden="true" />
+        <span>Back</span>
       </button>
-      <h2>Create a chatroom</h2>
+      <div className="screen-heading">
+        <span className="screen-icon" aria-hidden="true">
+          <Plus size={23} />
+        </span>
+        <div>
+          <span className="eyebrow">New conversation</span>
+          <h2>Create a chatroom</h2>
+          <p>Choose how long the room and its messages should remain available.</p>
+        </div>
+      </div>
       <form id="new-room-form" onSubmit={onSubmit}>
         <input
           id="room-name"
@@ -94,9 +105,13 @@ export function CreateRoom({
           </label>
         </div>
         <p id="duration-preview" className="sms-note">
+          <Clock3 size={15} aria-hidden="true" />
           {durationPreview}
         </p>
-        <button type="submit">Create room</button>
+        <button type="submit">
+          <Plus size={18} aria-hidden="true" />
+          Create room
+        </button>
       </form>
       <p id="create-room-error" className="error">
         {createRoomError}
