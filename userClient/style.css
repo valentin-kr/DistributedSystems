@@ -1,0 +1,199 @@
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #1a1a1a;
+  background: #f6f7f9;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: #202632;
+  color: white;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+#user-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+#user-bar label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+#logged-out-view, #logged-in-view {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+#request-code-form, #verify-form {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.sms-note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #9fd3a3;
+  max-width: 320px;
+}
+
+#logged-in-view .error, #logged-out-view .error {
+  margin: 0;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1rem;
+  padding: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 700px) {
+  main {
+    grid-template-columns: 1fr;
+  }
+}
+
+aside, section, .panel {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+section {
+  min-height: 60vh;
+}
+
+h2, h3 {
+  margin-top: 0;
+}
+
+ul {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+#room-list li {
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#room-list li:hover {
+  background: #eef1f5;
+}
+
+#room-list li.selected {
+  background: #dbe4ff;
+  font-weight: 600;
+}
+
+#member-list li, #media-list li {
+  padding: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.inline-action {
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  background: #c0392b;
+}
+
+.inline-action:hover {
+  background: #962d22;
+}
+
+#message-list {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 0.5rem;
+}
+
+#message-list li {
+  padding: 0.25rem 0;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+#add-member-form, #send-message-form, #upload-media-form {
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+input, select, button {
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #ccd0d6;
+}
+
+button {
+  background: #3550ff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #2740d6;
+}
+
+.panel {
+  margin-top: 1rem;
+  box-shadow: none;
+  border: 1px solid #eee;
+}
+
+.error {
+  color: #c0392b;
+  font-size: 0.85rem;
+  min-height: 1.1em;
+}
+
+#room-status.active {
+  color: #1a7f37;
+  font-weight: 600;
+}
+
+#room-status.expired {
+  color: #6a737d;
+  font-weight: 600;
+}
