@@ -3,6 +3,7 @@ package de.htw.chatroomapi.controller;
 import de.htw.chatroomapi.dto.AddMemberRequest;
 import de.htw.chatroomapi.dto.ChatroomResponse;
 import de.htw.chatroomapi.dto.CreateChatroomRequest;
+import de.htw.chatroomapi.dto.JoinChatroomRequest;
 import de.htw.chatroomapi.dto.MessageResponse;
 import de.htw.chatroomapi.dto.RenameChatroomRequest;
 import de.htw.chatroomapi.dto.SendMessageRequest;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -59,6 +61,12 @@ public class ChatroomController {
         return ResponseEntity.ok(toChatroomResponse(chatroomService.addMember(id, request.userId())));
     }
 
+    // Self-service join: anyone with the code can join without the creator adding them
+    @PostMapping("/join")
+    public ResponseEntity<ChatroomResponse> joinByCode(@RequestBody JoinChatroomRequest request) {
+        return ResponseEntity.ok(toChatroomResponse(chatroomService.joinByCode(request.code(), request.userId())));
+    }
+
     @PatchMapping("/{id}")
     public ResponseEntity<ChatroomResponse> renameChatroom(@PathVariable Integer id,
             @RequestBody RenameChatroomRequest request) {
@@ -95,11 +103,29 @@ public class ChatroomController {
         return ResponseEntity.ok(chatroomService.getMembers(id));
     }
 
+    @DeleteMapping("/{id}/members/{userId}")
+    public ResponseEntity<Void> removeMember(@PathVariable Integer id,
+            @PathVariable Long userId,
+            @RequestParam Long requesterId) {
+        chatroomService.removeMember(id, userId, requesterId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/messages/{messageId}")
+    public ResponseEntity<Void> deleteMessage(@PathVariable Integer id,
+            @PathVariable Integer messageId,
+            @RequestParam Long requesterId) {
+        chatroomService.deleteMessage(id, messageId, requesterId);
+        return ResponseEntity.noContent().build();
+    }
+
     private ChatroomResponse toChatroomResponse(Chatroom room) {
         return new ChatroomResponse(
                 room.getId(),
                 room.getName(),
                 room.getDescription(),
+                room.getCreatorId(),
+                room.getJoinCode(),
                 room.getSeqId(),
                 room.getCreatedAt(),
                 room.getExpiryDate(),

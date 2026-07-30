@@ -7,6 +7,8 @@ public record ChatroomResponse(
                 Integer id,
                 String name,
                 String description,
+                Long creatorId,
+                String joinCode,
                 Long seqId,
                 LocalDateTime createdAt,
                 LocalDateTime expiryDate,

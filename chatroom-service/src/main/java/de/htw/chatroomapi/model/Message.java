@@ -41,6 +41,14 @@ public class Message {
         this.seqId = seqId;
     }
 
+    public Integer getId() {
+        return id;
+    }
+
+    public Chatroom getChatroom() {
+        return chatroom;
+    }
+
     public Long getSeqId() {
         return seqId;
     }

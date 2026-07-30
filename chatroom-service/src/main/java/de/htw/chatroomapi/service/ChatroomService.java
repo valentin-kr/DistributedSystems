@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Random;
 
 @Service
 public class ChatroomService {
@@ -22,6 +23,8 @@ public class ChatroomService {
         this.messageRepository = messageRepository;
     }
 
+    private static final String JOIN_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
     @Transactional
     public Chatroom createChatroom(String name, String description, long expiryHours, long userId) {
         Chatroom room = new Chatroom();
@@ -30,8 +33,62 @@ public class ChatroomService {
         room.setDescription(description);
         room.setCreatedAt(now);
         room.setExpiryDate(now.plusHours(expiryHours));
+        room.setCreatorId(userId);
+        room.setJoinCode(generateUniqueJoinCode());
         room.addMember(userId);
         return chatroomRepository.save(room);
+    }
+
+    @Transactional
+    public Chatroom joinByCode(String code, Long userId) {
+        Chatroom room = chatroomRepository.findByJoinCode(code)
+                .orElseThrow(() -> new InvalidJoinCodeException(code));
+        if (!isActive(room)) {
+            throw new ChatroomExpiredException(room.getId());
+        }
+        room.addMember(userId);
+        return chatroomRepository.save(room);
+    }
+
+    private String generateUniqueJoinCode() {
+        Random random = new Random();
+        for (int attempt = 0; attempt < 10; attempt++) {
+            StringBuilder code = new StringBuilder();
+            for (int i = 0; i < 6; i++) {
+                code.append(JOIN_CODE_CHARS.charAt(random.nextInt(JOIN_CODE_CHARS.length())));
+            }
+            if (chatroomRepository.findByJoinCode(code.toString()).isEmpty()) {
+                return code.toString();
+            }
+        }
+        throw new IllegalStateException("Could not generate a unique join code");
+    }
+
+    @Transactional
+    public void removeMember(Integer chatroomId, Long targetUserId, Long requesterId) {
+        Chatroom room = findRoom(chatroomId);
+        requireOwner(room, requesterId, chatroomId);
+        room.removeMember(targetUserId);
+        chatroomRepository.save(room);
+    }
+
+    @Transactional
+    public void deleteMessage(Integer chatroomId, Integer messageId, Long requesterId) {
+        Chatroom room = findRoom(chatroomId);
+        requireOwner(room, requesterId, chatroomId);
+
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new ChatroomNotFoundException(chatroomId));
+        if (!message.getChatroom().getId().equals(chatroomId)) {
+            throw new ChatroomNotFoundException(chatroomId);
+        }
+        messageRepository.delete(message);
+    }
+
+    private void requireOwner(Chatroom room, Long requesterId, Integer chatroomId) {
+        if (!room.getCreatorId().equals(requesterId)) {
+            throw new NotChatroomOwnerException(requesterId, chatroomId);
+        }
     }
 
     @Transactional
@@ -118,6 +175,7 @@ public class ChatroomService {
 
     public MessageResponse toMessageResponse(Message message) {
         return new MessageResponse(
+                message.getId(),
                 message.getSeqId(),
                 message.getText(),
                 message.getAuthorId(),

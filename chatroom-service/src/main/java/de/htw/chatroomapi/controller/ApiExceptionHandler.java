@@ -3,7 +3,9 @@ package de.htw.chatroomapi.controller;
 import de.htw.chatroomapi.dto.ApiErrorResponse;
 import de.htw.chatroomapi.service.ChatroomExpiredException;
 import de.htw.chatroomapi.service.ChatroomNotFoundException;
+import de.htw.chatroomapi.service.InvalidJoinCodeException;
 import de.htw.chatroomapi.service.NotChatroomMemberException;
+import de.htw.chatroomapi.service.NotChatroomOwnerException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -27,6 +29,16 @@ public class ApiExceptionHandler {
     @ExceptionHandler(NotChatroomMemberException.class)
     public ResponseEntity<ApiErrorResponse> handleNotMember(NotChatroomMemberException exception) {
         return error(HttpStatus.FORBIDDEN, exception.getMessage());
+    }
+
+    @ExceptionHandler(NotChatroomOwnerException.class)
+    public ResponseEntity<ApiErrorResponse> handleNotOwner(NotChatroomOwnerException exception) {
+        return error(HttpStatus.FORBIDDEN, exception.getMessage());
+    }
+
+    @ExceptionHandler(InvalidJoinCodeException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidJoinCode(InvalidJoinCodeException exception) {
+        return error(HttpStatus.NOT_FOUND, exception.getMessage());
     }
 
     private ResponseEntity<ApiErrorResponse> error(HttpStatus status, String message) {

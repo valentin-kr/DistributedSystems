@@ -17,6 +17,10 @@ public class Chatroom {
 
     private String name;
     private String description;
+    private Long creatorId;
+
+    @Column(unique = true)
+    private String joinCode;
 
     private LocalDateTime createdAt;
     private LocalDateTime expiryDate;
@@ -47,6 +51,22 @@ public class Chatroom {
 
     public String getDescription() {
         return description;
+    }
+
+    public Long getCreatorId() {
+        return creatorId;
+    }
+
+    public void setCreatorId(Long creatorId) {
+        this.creatorId = creatorId;
+    }
+
+    public String getJoinCode() {
+        return joinCode;
+    }
+
+    public void setJoinCode(String joinCode) {
+        this.joinCode = joinCode;
     }
 
     public long getSeqId() {
@@ -92,6 +112,10 @@ public class Chatroom {
 
     public boolean hasMember(Long userId) {
         return userIDList.contains(userId);
+    }
+
+    public void removeMember(Long userId) {
+        userIDList.remove(userId);
     }
 
     public void setSeqId(Long seqId) {
