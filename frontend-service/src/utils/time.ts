@@ -21,3 +21,29 @@ export function formatEndTime(totalHours: number) {
     },
   )}`;
 }
+
+export function formatLastActiveTime(timestamp?: string | null) {
+  if (!timestamp) {
+    return "Last active: no activity yet";
+  }
+
+  const lastActive = parseServerTimestamp(timestamp);
+  if (Number.isNaN(lastActive.getTime())) {
+    return "Last active: unknown";
+  }
+
+  const time = lastActive.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  if (Date.now() - lastActive.getTime() < 24 * 60 * 60 * 1000) {
+    return `Last active: ${time}`;
+  }
+
+  const date = lastActive.toLocaleDateString([], {
+    day: "2-digit",
+    month: "2-digit",
+  });
+  return `Last active: ${date} ${time}`;
+}

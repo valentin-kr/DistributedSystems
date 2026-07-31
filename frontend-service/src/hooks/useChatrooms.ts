@@ -18,6 +18,12 @@ type UseChatroomsOptions = {
   onRoomLoaded: () => void;
 };
 
+const ACTIVITY_REFRESH_DELAY_MS = 350;
+
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
 export function useChatrooms({
   currentUser,
   onRoomLoaded,
@@ -128,7 +134,9 @@ export function useChatrooms({
     ]);
     setMessages(nextMessages);
     setMedia(nextMedia);
-  }, [currentRoomId]);
+    await wait(ACTIVITY_REFRESH_DELAY_MS);
+    await loadUsers();
+  }, [currentRoomId, loadUsers]);
 
   const showRoomListScreen = useCallback(async () => {
     await Promise.all([loadUsers(), loadRoomsList()]);
