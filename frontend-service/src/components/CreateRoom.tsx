@@ -106,7 +106,7 @@ export function CreateRoom({
             </select>
           </label>
         </div>
-        <p id="duration-preview" className="sms-note">
+        <p id="duration-preview" className="form-note">
           <Clock3 size={15} aria-hidden="true" />
           {durationPreview}
         </p>

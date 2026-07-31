@@ -1,6 +1,6 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PointerEvent, RefObject } from "react";
-import { apiUrl } from "../api/client";
+import { apiBlob } from "../api/client";
 import type { ThreadItem } from "../types";
 import { parseServerTimestamp } from "../utils/time";
 
@@ -122,17 +122,56 @@ function MediaContent({
   item: Extract<ThreadItem, { kind: "media" }>;
   currentRoomId: number | null;
 }) {
+  const [objectUrl, setObjectUrl] = useState("");
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    if (!currentRoomId) return;
+
+    let cancelled = false;
+    let nextObjectUrl = "";
+
+    setObjectUrl("");
+    setLoadError("");
+
+    void apiBlob(`/chatrooms/${currentRoomId}/media/${item.id}`)
+      .then((blob) => {
+        if (cancelled) return;
+        nextObjectUrl = URL.createObjectURL(blob);
+        setObjectUrl(nextObjectUrl);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setLoadError(err instanceof Error ? err.message : "Attachment failed");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      if (nextObjectUrl) {
+        URL.revokeObjectURL(nextObjectUrl);
+      }
+    };
+  }, [currentRoomId, item.id]);
+
   if (!currentRoomId) return null;
-  const url = apiUrl(`/chatrooms/${currentRoomId}/media/${item.id}`);
+
+  if (loadError) {
+    return <span className="bubble-attachment-status">{loadError}</span>;
+  }
+
+  if (!objectUrl) {
+    return <span className="bubble-attachment-status">Loading attachment...</span>;
+  }
 
   if (item.contentType?.startsWith("audio/")) {
-    return <audio controls src={url} />;
+    return <audio controls src={objectUrl} />;
   }
   if (item.contentType?.startsWith("image/")) {
-    return <img src={url} className="bubble-image" alt={item.filename} />;
+    return <img src={objectUrl} className="bubble-image" alt={item.filename} />;
   }
   return (
-    <a href={url} target="_blank" rel="noreferrer">
+    <a href={objectUrl} download={item.filename}>
       {item.filename}
     </a>
   );
