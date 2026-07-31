@@ -1,13 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { SyntheticEvent } from "react";
-import {
-  ArrowRight,
-  LogIn,
-  LogOut,
-  MessageCircle,
-  Plus,
-} from "lucide-react";
-import { apiUrl } from "./api/client";
+import { fetchEventSource } from "@microsoft/fetch-event-source";
+import { ArrowRight, LogIn, LogOut, MessageCircle, Plus } from "lucide-react";
+import { apiUrl, authorizationHeaders } from "./api/client";
+import { isOidcCallback } from "./auth/oidc";
 import { AuthFlow } from "./components/AuthFlow";
 import { CreateRoom } from "./components/CreateRoom";
 import { JoinRoom } from "./components/JoinRoom";
@@ -22,7 +18,9 @@ import type { FlowIntent, Screen } from "./types";
 type FormSubmitEvent = SyntheticEvent<HTMLFormElement>;
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("choice");
+  const [screen, setScreen] = useState<Screen>(() =>
+    isOidcCallback() ? "auth" : "choice",
+  );
   const [intent, setIntent] = useState<FlowIntent>(null);
   const clearMessageErrorRef = useRef<(() => void) | null>(null);
 
@@ -72,28 +70,39 @@ export default function App() {
       return;
     }
 
-    let closed = false;
-    const source = new EventSource(
+    const controller = new AbortController();
+    void fetchEventSource(
       apiUrl(`/chatrooms/${chatrooms.currentRoomId}/events`),
-    );
-
-    source.onmessage = (event) => {
-      if (!closed && event.data === "thread-changed") {
-        void chatrooms.reloadThread();
-      }
-    };
-
-    source.onerror = () => {
-      if (closed) {
-        return;
-      }
-    };
+      {
+        headers: authorizationHeaders(auth.currentUser?.token),
+        signal: controller.signal,
+        openWhenHidden: true,
+        async onopen(response) {
+          if (!response.ok) {
+            throw new Error(`Event stream failed (${response.status})`);
+          }
+        },
+        onmessage(event) {
+          if (event.data === "thread-changed") {
+            void chatrooms.reloadThread();
+          }
+        },
+        onerror(error) {
+          if (controller.signal.aborted) throw error;
+          return 5000;
+        },
+      },
+    ).catch(() => {});
 
     return () => {
-      closed = true;
-      source.close();
+      controller.abort();
     };
-  }, [screen, chatrooms.currentRoomId, chatrooms.reloadThread]);
+  }, [
+    screen,
+    chatrooms.currentRoomId,
+    chatrooms.reloadThread,
+    auth.currentUser?.token,
+  ]);
 
   function goToChoice() {
     setIntent(null);
@@ -116,6 +125,15 @@ export default function App() {
   function startJoinFlow() {
     setIntent("join");
     setScreen(auth.currentUser ? "join-room" : "auth");
+  }
+
+  async function openExistingChats() {
+    setIntent(null);
+    if (auth.currentUser) {
+      await showRoomListScreen();
+    } else {
+      setScreen("auth");
+    }
   }
 
   async function showRoomListScreen() {
@@ -186,12 +204,30 @@ export default function App() {
           <div className="intro-copy">
             <span className="eyebrow">Private. Temporary. Together.</span>
             <h2>Make space for the conversation</h2>
-            <p>
-              Start a room for your group or enter one with a six-character
-              invite code.
-            </p>
+            <p>Start a room for your group or join with an invite code.</p>
           </div>
           <div className="choice-grid">
+            {!auth.currentUser ? (
+              <button
+                id="choice-login-btn"
+                className="big-choice login-choice"
+                type="button"
+                onClick={() => void openExistingChats()}
+              >
+                <span className="choice-icon" aria-hidden="true">
+                  <MessageCircle size={23} />
+                </span>
+                <span className="choice-copy">
+                  <strong>Log in to open existing chats</strong>
+                  <small>See rooms you already joined</small>
+                </span>
+                <ArrowRight
+                  className="choice-arrow"
+                  size={20}
+                  aria-hidden="true"
+                />
+              </button>
+            ) : null}
             <button
               id="choice-create-btn"
               className="big-choice primary-choice"
@@ -205,7 +241,11 @@ export default function App() {
                 <strong>Create a chatroom</strong>
                 <small>Set a name and expiry time</small>
               </span>
-              <ArrowRight className="choice-arrow" size={20} aria-hidden="true" />
+              <ArrowRight
+                className="choice-arrow"
+                size={20}
+                aria-hidden="true"
+              />
             </button>
             <button
               id="choice-join-btn"
@@ -220,26 +260,22 @@ export default function App() {
                 <strong>Join a chatroom</strong>
                 <small>Use an invite code</small>
               </span>
-              <ArrowRight className="choice-arrow" size={20} aria-hidden="true" />
+              <ArrowRight
+                className="choice-arrow"
+                size={20}
+                aria-hidden="true"
+              />
             </button>
           </div>
         </section>
 
         <AuthFlow
           hidden={screen !== "auth"}
-          phoneNumber={auth.phoneNumber}
-          verifyCode={auth.verifyCode}
-          signupUsername={auth.signupUsername}
-          smsNote={auth.smsNote}
           authError={auth.authError}
-          showVerifyForm={auth.showVerifyForm}
-          isSignupFlow={auth.isSignupFlow}
+          isAuthLoading={auth.isAuthLoading}
+          oidcEnabled={auth.oidcEnabled}
           onBack={() => void goBackFromFlow()}
-          onRequestCode={auth.requestCode}
-          onVerifyPhone={auth.verifyPhone}
-          onPhoneNumberChange={auth.setPhoneNumber}
-          onVerifyCodeChange={auth.setVerifyCode}
-          onSignupUsernameChange={auth.setSignupUsername}
+          onSignIn={() => void auth.startOidcSignIn()}
         />
 
         <CreateRoom
@@ -298,7 +334,9 @@ export default function App() {
           onRemoveMember={(userId) => void chatrooms.removeMember(userId)}
           onSendMessage={composer.sendMessage}
           onMessageTextChange={composer.setMessageText}
-          onUploadFile={(file) => void composer.uploadMediaBlob(file, file.name)}
+          onUploadFile={(file) =>
+            void composer.uploadMediaBlob(file, file.name)
+          }
           onToggleRecording={() => void composer.toggleRecording()}
           onLongPress={contextMenu.showContextMenu}
         />
@@ -310,7 +348,10 @@ export default function App() {
         ref={contextMenu.menuRef}
         style={
           contextMenu.contextMenu
-            ? { left: contextMenu.contextMenu.x, top: contextMenu.contextMenu.y }
+            ? {
+                left: contextMenu.contextMenu.x,
+                top: contextMenu.contextMenu.y,
+              }
             : undefined
         }
       >

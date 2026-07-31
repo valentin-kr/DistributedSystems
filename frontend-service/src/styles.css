@@ -327,6 +327,11 @@ main {
   border-color: var(--accent-dark);
 }
 
+.login-choice {
+  grid-column: 1 / -1;
+  min-height: 116px;
+}
+
 .choice-icon {
   width: 42px;
   height: 42px;
@@ -470,6 +475,7 @@ select:focus {
 }
 
 form > button,
+.oidc-actions button,
 .choice-row button,
 #add-member-form button {
   min-height: 48px;
@@ -492,6 +498,7 @@ form > button,
 }
 
 form > button:hover,
+.oidc-actions button:hover,
 .choice-row button:hover,
 #add-member-form button:hover {
   background: var(--accent-dark);
@@ -499,9 +506,25 @@ form > button:hover,
 }
 
 form > button:active,
+.oidc-actions button:active,
 .choice-row button:active,
 #add-member-form button:active {
   transform: translateY(1px);
+}
+
+.oidc-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.oidc-actions button {
+  min-width: 0;
+}
+
+.oidc-actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .duration-row {
@@ -520,7 +543,7 @@ label {
   font-weight: 650;
 }
 
-.sms-note {
+.form-note {
   min-width: 0;
   display: flex;
   align-items: center;
@@ -531,7 +554,7 @@ label {
   line-height: 1.45;
 }
 
-.sms-note svg {
+.form-note svg {
   flex: 0 0 auto;
 }
 
@@ -732,9 +755,12 @@ label {
 }
 
 #screen-room {
-  min-height: calc(100vh - 72px - clamp(3rem, 10vw, 7rem));
+  position: relative;
+  height: calc(100vh - 72px - clamp(2rem, 5vw, 3.5rem));
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .room-header {
@@ -821,12 +847,20 @@ label {
 }
 
 #room-info-panel {
+  position: absolute;
+  top: 3rem;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  max-height: min(62vh, calc(100% - 9.25rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 1rem;
-  margin: 0.85rem 0 0;
+  margin: 0;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 13px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 18px 48px rgba(25, 47, 34, 0.16);
 }
 
 #room-description-text {
@@ -844,7 +878,7 @@ label {
 #room-join-code {
   min-width: 0;
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.65rem;
   padding: 0.7rem 0.75rem;
@@ -882,6 +916,29 @@ label {
   text-align: right;
 }
 
+.join-code-copy {
+  min-height: 32px;
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28rem;
+  padding: 0.35rem 0.55rem;
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid #b8d8c2;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.join-code-copy:hover {
+  color: var(--accent-dark);
+  background: #f7fbf8;
+}
+
 #room-info-panel h4 {
   display: flex;
   align-items: center;
@@ -903,6 +960,25 @@ label {
 
 #member-list li:last-child {
   border-bottom: 0;
+}
+
+.member-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.member-copy > span {
+  overflow: hidden;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-copy small {
+  color: var(--faint);
+  font-size: 0.68rem;
 }
 
 .inline-action {
@@ -938,8 +1014,8 @@ label {
 }
 
 #chat-thread {
-  flex: 1;
-  min-height: 42vh;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   display: flex;
@@ -1011,6 +1087,14 @@ label {
   border-radius: 8px;
 }
 
+.bubble-attachment-status {
+  display: inline-block;
+  max-width: 100%;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+  opacity: 0.75;
+}
+
 .bubble audio {
   width: min(260px, 60vw);
   max-width: 100%;
@@ -1030,7 +1114,7 @@ label {
   align-items: center;
   gap: 0.45rem;
   margin: 0;
-  padding: 0.65rem 0;
+  padding: 0.55rem 0 0.25rem;
   background: linear-gradient(
     to bottom,
     rgba(237, 241, 235, 0.5),
@@ -1184,7 +1268,7 @@ label {
   }
 
   #screen-room {
-    min-height: calc(100vh - 64px - 3.25rem);
+    height: calc(100vh - 64px - 2rem);
   }
 
   #room-info-panel {
@@ -1237,7 +1321,7 @@ label {
   }
 
   #room-join-code {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
 
   #room-join-code .join-code-note {

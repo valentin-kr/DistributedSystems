@@ -12,15 +12,15 @@ export type SessionUser = {
   id: number;
   username: string;
   displayName: string;
-  phoneNumber?: string;
-  token?: string;
+  token: string;
+  idToken: string;
+  expiresAt?: number;
 };
 
 export type ApiUser = {
   id: number;
   username: string;
   display_name?: string | null;
-  phone_number?: string;
   last_active?: string | null;
   zitadel_sub?: string | null;
 };
