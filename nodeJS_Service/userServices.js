@@ -68,6 +68,14 @@ async function initDb() {
   `);
   await pool.query(`UPDATE users SET display_name = username WHERE display_name IS NULL`);
   await pool.query(`ALTER TABLE users DROP COLUMN IF EXISTS phone_number`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS room_presence (
+      room_id BIGINT NOT NULL,
+      user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      last_seen TIMESTAMP NOT NULL,
+      PRIMARY KEY (room_id, user_id)
+    )
+  `);
 
   const { rows } = await pool.query('SELECT COUNT(*) FROM users');
   if (Number(rows[0].count) === 0) {
@@ -240,11 +248,24 @@ async function startEventConsumer() {
     eachMessage: async ({ message }) => {
       try {
         const event = JSON.parse(message.value.toString());
-        await pool.query('UPDATE users SET last_active = $1 WHERE id = $2', [
-          event.timestamp,
-          event.userId,
-        ]);
-        console.log(`Updated last_active for user ${event.userId} from message-events`);
+        if (!['message.sent', 'user.activity'].includes(event.type)) return;
+        const userResult = await pool.query(
+          `UPDATE users
+           SET last_active = $1
+           WHERE id = $2
+             AND (last_active IS NULL OR last_active < $1)`,
+          [event.timestamp, event.userId]
+        );
+        const presenceResult = await pool.query(
+          `INSERT INTO room_presence (room_id, user_id, last_seen)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (room_id, user_id)
+           DO UPDATE SET last_seen = GREATEST(room_presence.last_seen, EXCLUDED.last_seen)`,
+          [event.chatroomId, event.userId, event.timestamp]
+        );
+        if (userResult.rowCount > 0 || presenceResult.rowCount > 0) {
+          console.log(`Updated last_active for user ${event.userId} from message-events`);
+        }
       } catch (err) {
         console.error('Failed to process message-events event:', err);
       }
@@ -276,6 +297,7 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
     const { pathname } = url;
     const userId = parseUserId(pathname);
+    const isPresenceRequest = pathname === '/presence';
 
     if (req.method === 'GET' && pathname === '/health') {
       sendJson(res, 200, {
@@ -294,8 +316,27 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (AUTH_REQUIRED && (pathname === '/users' || userId !== null)) {
+    if (AUTH_REQUIRED && (pathname === '/users' || userId !== null || isPresenceRequest)) {
       await authenticateBearer(req);
+    }
+
+    if (req.method === 'GET' && isPresenceRequest) {
+      const roomId = Number(url.searchParams.get('roomId'));
+      if (!Number.isInteger(roomId) || roomId <= 0) {
+        sendJson(res, 400, { error: 'valid roomId is required' });
+        return;
+      }
+      const { rows } = await pool.query(
+        `SELECT room_id::integer AS room_id,
+                user_id::integer AS user_id,
+                last_seen
+         FROM room_presence
+         WHERE room_id = $1
+         ORDER BY user_id`,
+        [roomId]
+      );
+      sendJson(res, 200, rows);
+      return;
     }
 
     if (req.method === 'GET' && pathname === '/users') {

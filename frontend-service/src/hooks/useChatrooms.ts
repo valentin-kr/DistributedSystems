@@ -6,6 +6,7 @@ import type {
   Chatroom,
   Media,
   Message,
+  RoomPresence,
   SessionUser,
   ThreadItem,
 } from "../types";
@@ -18,11 +19,18 @@ type UseChatroomsOptions = {
   onRoomLoaded: () => void;
 };
 
+const ACTIVITY_REFRESH_DELAY_MS = 350;
+
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
 export function useChatrooms({
   currentUser,
   onRoomLoaded,
 }: UseChatroomsOptions) {
   const [users, setUsers] = useState<ApiUser[]>([]);
+  const [roomPresence, setRoomPresence] = useState<RoomPresence[]>([]);
   const [rooms, setRooms] = useState<Chatroom[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<number | null>(null);
   const [currentRoom, setCurrentRoom] = useState<Chatroom | null>(null);
@@ -98,6 +106,24 @@ export function useChatrooms({
     return nextUsers;
   }, []);
 
+  const loadRoomPresence = useCallback(async (roomId: number) => {
+    const response = await api<RoomPresence[]>(`/presence?roomId=${roomId}`);
+    const nextPresence = Array.isArray(response)
+      ? response.map((presence) => ({
+          ...presence,
+          room_id: Number(presence.room_id),
+          user_id: Number(presence.user_id),
+        }))
+      : [];
+    setRoomPresence(nextPresence);
+    return nextPresence;
+  }, []);
+
+  const reloadActivity = useCallback(async () => {
+    if (!currentRoomId) return loadUsers();
+    return Promise.all([loadUsers(), loadRoomPresence(currentRoomId)]);
+  }, [currentRoomId, loadRoomPresence, loadUsers]);
+
   const loadRoomsList = useCallback(async () => {
     const nextRooms = await api<Chatroom[]>("/chatrooms");
     setRooms(nextRooms);
@@ -128,12 +154,15 @@ export function useChatrooms({
     ]);
     setMessages(nextMessages);
     setMedia(nextMedia);
-  }, [currentRoomId]);
+    await wait(ACTIVITY_REFRESH_DELAY_MS);
+    await reloadActivity();
+  }, [currentRoomId, reloadActivity]);
 
   const showRoomListScreen = useCallback(async () => {
     await Promise.all([loadUsers(), loadRoomsList()]);
     setCurrentRoomId(null);
     setCurrentRoom(null);
+    setRoomPresence([]);
     setShowInfo(false);
   }, [loadRoomsList, loadUsers]);
 
@@ -141,10 +170,13 @@ export function useChatrooms({
     async (roomId: number) => {
       setCurrentRoomId(roomId);
       setShowInfo(false);
-      await loadUsers();
-      await loadRoomDetail(roomId);
+      await Promise.all([
+        loadUsers(),
+        loadRoomPresence(roomId),
+        loadRoomDetail(roomId),
+      ]);
     },
-    [loadRoomDetail, loadUsers],
+    [loadRoomDetail, loadRoomPresence, loadUsers],
   );
 
   async function createRoom(event: FormSubmitEvent) {
@@ -230,11 +262,13 @@ export function useChatrooms({
     setCurrentRoomId(null);
     setCurrentRoom(null);
     setUsers([]);
+    setRoomPresence([]);
     setRooms([]);
   }
 
   return {
     users,
+    roomPresence,
     currentRoomId,
     currentRoom,
     showInfo,
@@ -251,6 +285,7 @@ export function useChatrooms({
     threadItems,
     threadRef,
     usernameFor,
+    reloadActivity,
     reloadThread,
     showRoomListScreen,
     enterRoom,

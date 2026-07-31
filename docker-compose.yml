@@ -27,11 +27,15 @@ services:
       ZITADEL_ISSUER: ${ZITADEL_ISSUER:-}
       ZITADEL_JWKS_URI: ${ZITADEL_JWKS_URI:-}
       ZITADEL_AUDIENCE: ${ZITADEL_AUDIENCE:-}
+      KAFKA_BROKER: kafka:9092
+      CHATROOM_KAFKA_ENABLED: "true"
     volumes:
       - chatroom-media:/app/media-storage
     depends_on:
       chatroom-db:
         condition: service_healthy
+      kafka:
+        condition: service_started
 
   chatroom-db:
     image: postgres:18

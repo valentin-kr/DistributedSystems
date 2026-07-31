@@ -81,6 +81,21 @@ class ChatroomServiceTests {
     }
 
     @Test
+    void memberCanRecordActivityWithoutSendingMessage() {
+        Chatroom room = chatroomService.createChatroom("demo", null, 2, 42L);
+
+        chatroomService.recordActivity(room.getId(), 42L);
+    }
+
+    @Test
+    void nonMemberCannotRecordActivity() {
+        Chatroom room = chatroomService.createChatroom("demo", null, 2, 42L);
+
+        assertThatThrownBy(() -> chatroomService.recordActivity(room.getId(), 99L))
+                .isInstanceOf(NotChatroomMemberException.class);
+    }
+
+    @Test
     void renameChatroomUpdatesName() {
         Chatroom room = chatroomService.createChatroom("demo", "before", 2, 42L);
 

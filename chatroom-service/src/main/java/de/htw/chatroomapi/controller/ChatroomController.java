@@ -1,6 +1,7 @@
 package de.htw.chatroomapi.controller;
 
 import de.htw.chatroomapi.dto.AddMemberRequest;
+import de.htw.chatroomapi.dto.ActivityRequest;
 import de.htw.chatroomapi.dto.ChatroomResponse;
 import de.htw.chatroomapi.dto.CreateChatroomRequest;
 import de.htw.chatroomapi.dto.JoinChatroomRequest;
@@ -59,6 +60,13 @@ public class ChatroomController {
         MessageResponse response = chatroomService.toMessageResponse(message);
         roomEventService.emitThreadChanged(id);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/{id}/activity")
+    public ResponseEntity<Void> recordActivity(@PathVariable Integer id,
+            @RequestBody ActivityRequest request) {
+        chatroomService.recordActivity(id, request.userId());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{id}/members")

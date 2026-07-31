@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { SyntheticEvent } from "react";
 import { Check, Copy, KeyRound, UserPlus, Users, X } from "lucide-react";
-import type { ApiUser, Chatroom } from "../types";
-import { formatLastActiveTime } from "../utils/time";
+import type { ApiUser, Chatroom, RoomPresence } from "../types";
+import { formatLastActiveTime, isRoomPresenceOnline } from "../utils/time";
 
 type FormSubmitEvent = SyntheticEvent<HTMLFormElement>;
 
@@ -10,6 +10,7 @@ type RoomInfoPanelProps = {
   hidden: boolean;
   room: Chatroom | null;
   users: ApiUser[];
+  roomPresence: RoomPresence[];
   isCreator: boolean;
   usernameFor: (userId: number) => string;
   onAddMember: (event: FormSubmitEvent) => void;
@@ -20,6 +21,7 @@ export function RoomInfoPanel({
   hidden,
   room,
   users,
+  roomPresence,
   isCreator,
   usernameFor,
   onAddMember,
@@ -73,6 +75,10 @@ export function RoomInfoPanel({
       <ul id="member-list">
         {room?.memberIds.map((memberId) => {
           const user = users.find((candidate) => candidate.id === memberId);
+          const presence = roomPresence.find(
+            (candidate) => candidate.user_id === memberId,
+          );
+          const isOnline = isRoomPresenceOnline(presence?.last_seen);
           return (
             <li key={memberId}>
               <span className="member-copy">
@@ -80,7 +86,9 @@ export function RoomInfoPanel({
                   {usernameFor(memberId)}
                   {memberId === room.creatorId ? " (creator)" : ""}
                 </span>
-                <small>{formatLastActiveTime(user?.last_active)}</small>
+                <small className={isOnline ? "online" : undefined}>
+                  {isOnline ? "Online" : formatLastActiveTime(user?.last_active)}
+                </small>
               </span>
               {isCreator && memberId !== room.creatorId ? (
                 <button

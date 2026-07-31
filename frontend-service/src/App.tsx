@@ -12,6 +12,7 @@ import { RoomScreen } from "./components/RoomScreen";
 import { useAuthFlow } from "./hooks/useAuthFlow";
 import { useChatrooms } from "./hooks/useChatrooms";
 import { useMessageContextMenu } from "./hooks/useMessageContextMenu";
+import { usePresence } from "./hooks/usePresence";
 import { useRoomComposer } from "./hooks/useRoomComposer";
 import type { FlowIntent, Screen } from "./types";
 
@@ -57,6 +58,13 @@ export default function App() {
 
   const contextMenu = useMessageContextMenu({
     onDeleteMessage: composer.deleteMessage,
+  });
+
+  usePresence({
+    active: screen === "room",
+    roomId: chatrooms.currentRoomId,
+    userId: auth.currentUser?.id,
+    refreshActivity: chatrooms.reloadActivity,
   });
 
   useEffect(() => {
@@ -315,6 +323,7 @@ export default function App() {
           hidden={screen !== "room"}
           room={chatrooms.currentRoom}
           users={chatrooms.users}
+          roomPresence={chatrooms.roomPresence}
           currentUser={auth.currentUser}
           currentRoomId={chatrooms.currentRoomId}
           threadItems={chatrooms.threadItems}

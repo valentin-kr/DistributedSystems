@@ -25,6 +25,12 @@ export type ApiUser = {
   zitadel_sub?: string | null;
 };
 
+export type RoomPresence = {
+  room_id: number;
+  user_id: number;
+  last_seen: string;
+};
+
 export type Chatroom = {
   id: number;
   name: string;

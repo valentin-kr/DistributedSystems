@@ -18,10 +18,14 @@ public class ChatroomService {
 
     private final ChatroomRepo chatroomRepository;
     private final MessageRepo messageRepository;
+    private final MessageEventPublisher messageEventPublisher;
 
-    public ChatroomService(ChatroomRepo chatroomRepository, MessageRepo messageRepository) {
+    public ChatroomService(ChatroomRepo chatroomRepository,
+            MessageRepo messageRepository,
+            MessageEventPublisher messageEventPublisher) {
         this.chatroomRepository = chatroomRepository;
         this.messageRepository = messageRepository;
+        this.messageEventPublisher = messageEventPublisher;
     }
 
     private static final String JOIN_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -141,7 +145,17 @@ public class ChatroomService {
         long nextSeqId = messageRepository.findMaxSeqIdByChatroomId(chatroomId) + 1;
         message.setSeqId(nextSeqId);
         room.setSeqId(nextSeqId);
-        return messageRepository.save(message);
+        Message savedMessage = messageRepository.save(message);
+        messageEventPublisher.publishMessageSent(chatroomId, savedMessage);
+        return savedMessage;
+    }
+
+    public void recordActivity(Integer chatroomId, Long userId) {
+        Chatroom room = findRoom(chatroomId);
+        if (!room.hasMember(userId)) {
+            throw new NotChatroomMemberException(userId, chatroomId);
+        }
+        messageEventPublisher.publishUserActivity(chatroomId, userId, Instant.now());
     }
 
     public List<Message> getMessagesSince(Integer chatroomId, Long seqId) {
