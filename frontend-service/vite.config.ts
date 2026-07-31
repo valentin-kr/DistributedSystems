@@ -10,6 +10,7 @@ export default defineConfig({
     proxy: {
       "/auth": proxyTarget,
       "/users": proxyTarget,
+      "/presence": proxyTarget,
       "/chatrooms": proxyTarget,
     },
   },

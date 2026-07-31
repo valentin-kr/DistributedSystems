@@ -3,7 +3,13 @@ import { ArrowLeft, Info, Mic, Paperclip, Send, Square } from "lucide-react";
 import { ChatThread } from "./ChatThread";
 import { RoomInfoPanel } from "./RoomInfoPanel";
 import type { ChatThreadLongPress } from "./ChatThread";
-import type { ApiUser, Chatroom, SessionUser, ThreadItem } from "../types";
+import type {
+  ApiUser,
+  Chatroom,
+  RoomPresence,
+  SessionUser,
+  ThreadItem,
+} from "../types";
 
 type FormSubmitEvent = SyntheticEvent<HTMLFormElement>;
 
@@ -11,6 +17,7 @@ type RoomScreenProps = {
   hidden: boolean;
   room: Chatroom | null;
   users: ApiUser[];
+  roomPresence: RoomPresence[];
   currentUser: SessionUser | null;
   currentRoomId: number | null;
   threadItems: ThreadItem[];
@@ -39,6 +46,7 @@ export function RoomScreen({
   hidden,
   room,
   users,
+  roomPresence,
   currentUser,
   currentRoomId,
   threadItems,
@@ -95,6 +103,7 @@ export function RoomScreen({
         hidden={!showInfo}
         room={room}
         users={users}
+        roomPresence={roomPresence}
         isCreator={isCreator}
         usernameFor={usernameFor}
         onAddMember={onAddMember}

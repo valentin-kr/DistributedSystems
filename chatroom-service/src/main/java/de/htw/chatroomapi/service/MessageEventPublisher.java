@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+
 @Service
 public class MessageEventPublisher {
 
@@ -27,6 +29,20 @@ public class MessageEventPublisher {
     }
 
     public void publishMessageSent(Integer chatroomId, Message message) {
+        String payload = """
+                {"type":"message.sent","userId":%d,"chatroomId":%d,"messageId":%d,"timestamp":"%s"}"""
+                .formatted(message.getAuthorId(), chatroomId, message.getId(), message.getTimestamp());
+        publish(message.getAuthorId(), payload, "message " + message.getId());
+    }
+
+    public void publishUserActivity(Integer chatroomId, Long userId, Instant timestamp) {
+        String payload = """
+                {"type":"user.activity","userId":%d,"chatroomId":%d,"timestamp":"%s"}"""
+                .formatted(userId, chatroomId, timestamp);
+        publish(userId, payload, "activity for user " + userId);
+    }
+
+    private void publish(Long userId, String payload, String eventDescription) {
         if (!enabled) {
             return;
         }
@@ -37,19 +53,15 @@ public class MessageEventPublisher {
             return;
         }
 
-        String payload = """
-                {"type":"message.sent","userId":%d,"chatroomId":%d,"messageId":%d,"timestamp":"%s"}"""
-                .formatted(message.getAuthorId(), chatroomId, message.getId(), message.getTimestamp());
-
         try {
-            kafkaTemplate.send(topic, String.valueOf(message.getAuthorId()), payload)
+            kafkaTemplate.send(topic, String.valueOf(userId), payload)
                     .whenComplete((result, ex) -> {
                         if (ex != null) {
-                            log.warn("Could not publish message event for message {}", message.getId(), ex);
+                            log.warn("Could not publish Kafka event for {}", eventDescription, ex);
                         }
                     });
         } catch (RuntimeException ex) {
-            log.warn("Could not publish message event for message {}", message.getId(), ex);
+            log.warn("Could not publish Kafka event for {}", eventDescription, ex);
         }
     }
 }

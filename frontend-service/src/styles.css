@@ -981,6 +981,11 @@ label {
   font-size: 0.68rem;
 }
 
+.member-copy small.online {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .inline-action {
   width: auto;
   min-height: 28px;

@@ -1,4 +1,5 @@
 const TIMEZONE_SUFFIX_PATTERN = /(?:Z|[+-]\d{2}:?\d{2})$/;
+const ROOM_ONLINE_WINDOW_MS = 45_000;
 
 export function parseServerTimestamp(timestamp: string) {
   const normalized = TIMEZONE_SUFFIX_PATTERN.test(timestamp)
@@ -24,12 +25,12 @@ export function formatEndTime(totalHours: number) {
 
 export function formatLastActiveTime(timestamp?: string | null) {
   if (!timestamp) {
-    return "Last active: no activity yet";
+    return "Last seen: no activity yet";
   }
 
   const lastActive = parseServerTimestamp(timestamp);
   if (Number.isNaN(lastActive.getTime())) {
-    return "Last active: unknown";
+    return "Last seen: unknown";
   }
 
   const time = lastActive.toLocaleTimeString([], {
@@ -38,12 +39,20 @@ export function formatLastActiveTime(timestamp?: string | null) {
   });
 
   if (Date.now() - lastActive.getTime() < 24 * 60 * 60 * 1000) {
-    return `Last active: ${time}`;
+    return `Last seen: ${time}`;
   }
 
   const date = lastActive.toLocaleDateString([], {
     day: "2-digit",
     month: "2-digit",
   });
-  return `Last active: ${date} ${time}`;
+  return `Last seen: ${date} ${time}`;
+}
+
+export function isRoomPresenceOnline(timestamp?: string | null) {
+  if (!timestamp) return false;
+  const lastSeen = parseServerTimestamp(timestamp).getTime();
+  return (
+    !Number.isNaN(lastSeen) && Date.now() - lastSeen <= ROOM_ONLINE_WINDOW_MS
+  );
 }

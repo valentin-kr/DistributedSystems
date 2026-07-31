@@ -150,6 +150,14 @@ public class ChatroomService {
         return savedMessage;
     }
 
+    public void recordActivity(Integer chatroomId, Long userId) {
+        Chatroom room = findRoom(chatroomId);
+        if (!room.hasMember(userId)) {
+            throw new NotChatroomMemberException(userId, chatroomId);
+        }
+        messageEventPublisher.publishUserActivity(chatroomId, userId, Instant.now());
+    }
+
     public List<Message> getMessagesSince(Integer chatroomId, Long seqId) {
         findRoom(chatroomId);
         return messageRepository.findByChatroomIdAndSeqIdGreaterThanEqual(chatroomId, seqId);
