@@ -1,5 +1,5 @@
 {
-  "name": "user-services",
+  "name": "user-service",
   "version": "1.0.0",
   "private": true,
   "main": "userServices.js",
