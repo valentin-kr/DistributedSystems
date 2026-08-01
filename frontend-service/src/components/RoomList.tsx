@@ -7,6 +7,8 @@ import {
   Plus,
   Users,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { formatRoomExpiryStatus } from "../utils/time";
 
 type RoomListProps = {
   hidden: boolean;
@@ -23,6 +25,13 @@ export function RoomList({
   onJoin,
   onEnterRoom,
 }: RoomListProps) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
   return (
     <section id="screen-room-list" className="screen" hidden={hidden}>
       <div className="room-list-heading">
@@ -53,48 +62,57 @@ export function RoomList({
         <p>Create one or join with an invite code to get started.</p>
       </div>
       <ul id="room-list">
-        {rooms.map((room) => (
-          <li key={room.id}>
-            <button
-              type="button"
-              className="room-card"
-              onClick={() => onEnterRoom(room.id)}
-            >
-              <span
-                className={`room-card-icon ${room.active ? "" : "expired"}`}
+        {rooms.map((room) => {
+          const status = formatRoomExpiryStatus(
+            room.expiryDate,
+            room.active,
+            now,
+          );
+
+          return (
+            <li key={room.id}>
+              <button
+                type="button"
+                className="room-card"
+                onClick={() => onEnterRoom(room.id)}
               >
-                {room.active ? (
-                  <MessageCircle size={21} aria-hidden="true" />
-                ) : (
-                  <Clock3 size={21} aria-hidden="true" />
-                )}
-              </span>
-              <span className="room-card-copy">
-                <span className="room-card-title-row">
-                  <strong>{room.name}</strong>
-                  <span
-                    className={`status-badge ${room.active ? "active" : "expired"}`}
-                  >
-                    {room.active ? "Active" : "Expired"}
+                <span
+                  className={`room-card-icon ${room.active ? "" : "expired"}`}
+                >
+                  {room.active ? (
+                    <MessageCircle size={21} aria-hidden="true" />
+                  ) : (
+                    <Clock3 size={21} aria-hidden="true" />
+                  )}
+                </span>
+                <span className="room-card-copy">
+                  <span className="room-card-title-row">
+                    <strong>{room.name}</strong>
+                    <span
+                      className={`status-badge ${room.active ? "active" : "expired"}`}
+                      title={status.title}
+                    >
+                      {status.label}
+                    </span>
+                  </span>
+                  <span className="room-card-description">
+                    {room.description || "No description"}
+                  </span>
+                  <span className="room-card-meta">
+                    <Users size={14} aria-hidden="true" />
+                    {room.memberIds.length}{" "}
+                    {room.memberIds.length === 1 ? "member" : "members"}
                   </span>
                 </span>
-                <span className="room-card-description">
-                  {room.description || "No description"}
-                </span>
-                <span className="room-card-meta">
-                  <Users size={14} aria-hidden="true" />
-                  {room.memberIds.length}{" "}
-                  {room.memberIds.length === 1 ? "member" : "members"}
-                </span>
-              </span>
-              <ArrowRight
-                className="room-card-arrow"
-                size={20}
-                aria-hidden="true"
-              />
-            </button>
-          </li>
-        ))}
+                <ArrowRight
+                  className="room-card-arrow"
+                  size={20}
+                  aria-hidden="true"
+                />
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

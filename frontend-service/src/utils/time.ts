@@ -1,5 +1,8 @@
 const TIMEZONE_SUFFIX_PATTERN = /(?:Z|[+-]\d{2}:?\d{2})$/;
 const ROOM_ONLINE_WINDOW_MS = 45_000;
+const MINUTE_MS = 60_000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
 
 export function parseServerTimestamp(timestamp: string) {
   const normalized = TIMEZONE_SUFFIX_PATTERN.test(timestamp)
@@ -21,6 +24,57 @@ export function formatEndTime(totalHours: number) {
       minute: "2-digit",
     },
   )}`;
+}
+
+function formatCompactDuration(durationMs: number) {
+  const safeDuration = Math.max(0, durationMs);
+
+  if (safeDuration < MINUTE_MS) {
+    return "<1m";
+  }
+
+  if (safeDuration < HOUR_MS) {
+    return `${Math.ceil(safeDuration / MINUTE_MS)}m`;
+  }
+
+  if (safeDuration < DAY_MS) {
+    return `${Math.ceil(safeDuration / HOUR_MS)}h`;
+  }
+
+  return `${Math.ceil(safeDuration / DAY_MS)}d`;
+}
+
+export function formatRoomExpiryStatus(
+  expiryDate: string,
+  active: boolean,
+  nowMs = Date.now(),
+) {
+  const expiry = parseServerTimestamp(expiryDate);
+
+  if (Number.isNaN(expiry.getTime())) {
+    return {
+      label: active ? "Active" : "Expired",
+      title: "Expiry time unknown",
+    };
+  }
+
+  const expiryTime = expiry.getTime();
+  const exactTime = expiry.toLocaleString([], {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  if (active) {
+    return {
+      label: `Active · ${formatCompactDuration(expiryTime - nowMs)} left`,
+      title: `Expires ${exactTime}`,
+    };
+  }
+
+  return {
+    label: `Expired · ended ${formatCompactDuration(nowMs - expiryTime)} ago`,
+    title: `Expired ${exactTime}`,
+  };
 }
 
 export function formatLastActiveTime(timestamp?: string | null) {

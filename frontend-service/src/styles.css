@@ -689,6 +689,7 @@ label {
   flex: 0 0 auto;
   font-size: 0.66rem;
   font-weight: 750;
+  white-space: nowrap;
 }
 
 .status-badge.active {

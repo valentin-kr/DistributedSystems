@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import type { RefObject, SyntheticEvent } from "react";
 import { ArrowLeft, Info, Mic, Paperclip, Send, Square } from "lucide-react";
 import { ChatThread } from "./ChatThread";
 import { RoomInfoPanel } from "./RoomInfoPanel";
 import type { ChatThreadLongPress } from "./ChatThread";
+import { formatRoomExpiryStatus } from "../utils/time";
 import type {
   ApiUser,
   Chatroom,
@@ -70,6 +72,40 @@ export function RoomScreen({
   onToggleRecording,
   onLongPress,
 }: RoomScreenProps) {
+  const [now, setNow] = useState(() => Date.now());
+  const roomStatus = room
+    ? formatRoomExpiryStatus(room.expiryDate, room.active, now)
+    : null;
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setNow(Date.now()), 60_000);
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    if (hidden || !showInfo) {
+      return;
+    }
+
+    function closeInfoOnOutsideClick(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      if (target.closest("#room-info-panel, #room-info-btn")) {
+        return;
+      }
+
+      onToggleInfo();
+    }
+
+    document.addEventListener("pointerdown", closeInfoOnOutsideClick);
+    return () => {
+      document.removeEventListener("pointerdown", closeInfoOnOutsideClick);
+    };
+  }, [hidden, showInfo, onToggleInfo]);
+
   return (
     <section id="screen-room" className="screen" hidden={hidden}>
       <div className="room-header">
@@ -84,8 +120,16 @@ export function RoomScreen({
         </button>
         <div className="room-header-text">
           <h2 id="room-title">{room?.name || ""}</h2>
-          <p id="room-status" className={room?.active ? "active" : "expired"}>
-            {room ? (room.active ? "Active" : "Expired - read only") : ""}
+          <p
+            id="room-status"
+            className={room?.active ? "active" : "expired"}
+            title={roomStatus?.title}
+          >
+            {room
+              ? room.active
+                ? roomStatus?.label
+                : `${roomStatus?.label} · read only`
+              : ""}
           </p>
         </div>
         <button
